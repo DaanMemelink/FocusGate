@@ -1,0 +1,23 @@
+# Dependencies (once we add a build step)
+node_modules/
+
+# Build / packaging output
+dist/
+build/
+*.zip
+*.crx
+*.pem
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs and local env
+*.log
+.env
+.env.*

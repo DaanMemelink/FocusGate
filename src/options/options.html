@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Focus Gate — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Focus Gate</h1>
+      <p class="sub">Pause before distracting sites during your focus hours.</p>
+
+      <label>Blocked sites</label>
+      <div id="sites-list" class="sites-list"></div>
+      <button id="add-site" type="button" class="secondary">+ Add site</button>
+
+      <div class="row">
+        <div>
+          <label for="start">Start</label>
+          <input type="time" id="start" />
+        </div>
+        <div>
+          <label for="end">End</label>
+          <input type="time" id="end" />
+        </div>
+      </div>
+
+      <label for="grace">Grace period <span>(minutes unlocked after "Continue")</span></label>
+      <input type="number" id="grace" min="0" max="240" />
+
+      <div class="actions">
+        <button id="save" type="button">Save</button>
+        <span id="status" class="status"></span>
+      </div>
+    </main>
+
+    <script src="../common/defaults.js"></script>
+    <script src="../common/sites.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

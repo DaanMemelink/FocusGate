@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Focus Gate",
+  "version": "0.3.1",
+  "description": "Pause before opening distracting sites during your focus hours.",
+  "permissions": ["storage", "webNavigation"],
+  "background": {
+    "service_worker": "src/background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "run_at": "document_idle",
+      "all_frames": false,
+      "js": [
+        "src/common/defaults.js",
+        "src/common/schedule.js",
+        "src/common/sites.js",
+        "src/content/monitor.js"
+      ]
+    }
+  ],
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "Focus Gate"
+  }
+}
