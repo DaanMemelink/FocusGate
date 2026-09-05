@@ -99,24 +99,44 @@ export function shouldGate(url, rules) {
   return Boolean(rule) && !isAllowed(rule);
 }
 
-// Match-order badges for the settings list. Rules only ever compete with others
-// on the same registrable domain, so they're grouped by the last two host
-// labels and numbered by specificity within the group. A rule with no siblings
-// shows "·" — nothing to be ordered against.
-export function matchOrderBadges(rules) {
-  const groups = new Map();
-  (rules || []).forEach((rule, i) => {
-    const domain = String(rule.host || "").split(".").slice(-2).join(".");
-    if (!groups.has(domain)) groups.set(domain, []);
-    groups.get(domain).push(i);
+// The registrable domain a rule competes within — the last two host labels.
+export function domainOf(rule) {
+  return String(rule.host || "").split(".").slice(-2).join(".");
+}
+
+// Rules bucketed by the domain they compete within, each bucket ordered most
+// specific first. Rules on different domains can never match the same URL, so
+// they never compete; only a bucket's internal order is meaningful, and that
+// order is derived, not stored.
+//
+// Returns [{ domain, entries: [{ rule, index, badge }] }], sorted by domain so
+// the list is stable across renders. `index` is the position in the original
+// array, which is what edit callbacks need.
+export function groupRules(rules) {
+  const buckets = new Map();
+  (rules || []).forEach((rule, index) => {
+    const domain = domainOf(rule);
+    if (!buckets.has(domain)) buckets.set(domain, []);
+    buckets.get(domain).push({ rule, index });
   });
 
-  const badges = {};
-  for (const indices of groups.values()) {
-    indices.sort((a, b) => specificity(rules[b]) - specificity(rules[a]));
-    indices.forEach((index, n) => {
-      badges[index] = indices.length > 1 ? String(n + 1).padStart(2, "0") : "·";
+  return [...buckets.keys()].sort().map((domain) => {
+    const entries = buckets.get(domain);
+    entries.sort((a, b) => specificity(b.rule) - specificity(a.rule));
+    entries.forEach((entry, n) => {
+      // A lone rule competes with nothing, so a number would imply an ordering
+      // that does not exist.
+      entry.badge = entries.length > 1 ? String(n + 1).padStart(2, "0") : "·";
     });
+    return { domain, entries };
+  });
+}
+
+// Flat index -> badge, for callers that just want the label.
+export function matchOrderBadges(rules) {
+  const badges = {};
+  for (const group of groupRules(rules)) {
+    for (const entry of group.entries) badges[entry.index] = entry.badge;
   }
   return badges;
 }

@@ -33,6 +33,27 @@ export function isVideoHost(host) {
   return VIDEO_HOST.test(String(host || "") + ".");
 }
 
+// The four gate steps, in the order they run. `restart` is not one of them —
+// it is a modifier on the wait.
+export const STEP_KEYS = ["wait", "task", "intent", "commit"];
+
+// Which steps a rule actually runs.
+//
+// Two layers, on purpose: the global toggles say which steps exist at all, and
+// a level preset may narrow that further. Light is meant to be a speed bump, so
+// it ships running only the wait and the commit — asking someone to solve a
+// puzzle to reach a site they have marked as one they genuinely need would be
+// friction with nothing behind it.
+export function stepsFor(rule, cfg) {
+  const global = (cfg && cfg.steps) || {};
+  const override = presetFor(cfg, rule.level).steps;
+  const out = {};
+  for (const key of STEP_KEYS) {
+    out[key] = Boolean(global[key]) && (override ? Boolean(override[key]) : true);
+  }
+  return out;
+}
+
 export function presetFor(cfg, level) {
   const presets = (cfg && cfg.presets) || {};
   return presets[level] || presets.Standard || { wait: 30, unlock: 15 };

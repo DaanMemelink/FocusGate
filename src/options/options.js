@@ -4,14 +4,13 @@
 // `saved` the JSON of what is in storage. When they differ the save bar appears.
 // Nothing reaches chrome.storage.sync until Save is pressed.
 import { getDefaultSettings, cloneSettings, parseQuotes } from "../core/defaults.js";
-import { LEVELS, LEVEL_HINT, presetFor, floorNote } from "../core/levels.js";
-import { parsePattern, matchOrderBadges } from "../core/rules.js";
+import { LEVELS, LEVEL_HINT, presetFor, floorNote, stepsFor, STEP_KEYS } from "../core/levels.js";
+import { parsePattern, groupRules } from "../core/rules.js";
 import { loadSettings, saveSettings } from "../core/storage.js";
 import { describeSchedule } from "../core/schedule.js";
 
 const $ = (id) => document.getElementById(id);
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const STEP_KEYS = ["wait", "task", "intent", "commit"];
 
 const STEP_DEFS = [
   ["wait", "Step 1 — Wait", "A countdown you have to sit through."],
@@ -54,49 +53,67 @@ function el(tag, className, text) {
 
 // --- 01 Rules ---------------------------------------------------------------
 
+// Rules are rendered grouped by the domain they compete within, most specific
+// first, so the 01/02/03 badges read top to bottom. A group of one gets no
+// header — there is no competition to explain.
 function renderRules() {
   const host = $("rules");
   host.innerHTML = "";
-  const badges = matchOrderBadges(cfg.rules);
 
-  cfg.rules.forEach((rule, i) => {
-    const wrap = el("div", "rule");
+  for (const group of groupRules(cfg.rules)) {
+    const competing = group.entries.length > 1;
+    const box = el("div", competing ? "rule-group competing" : "rule-group");
 
-    const head = el("div", "rule-head");
-    // The badge is a match ORDER, not a priority the user sets. A number means
-    // this rule competes with others on the same domain and is checked in that
-    // position; a dot means nothing else could ever match the same URL.
-    const order = el("span", "rule-order", badges[i]);
-    order.title =
-      badges[i] === "·"
-        ? "No other rule covers this domain, so nothing competes with it."
-        : `Checked ${badges[i]} of the rules on this domain — most specific first.`;
-    head.appendChild(order);
+    if (competing) {
+      const head = el("div", "group-head");
+      head.append(
+        el("span", "group-domain", group.domain),
+        el("span", "group-note", `${group.entries.length} rules — checked in this order`)
+      );
+      box.appendChild(head);
+    }
 
-    const label = el("button", "rule-label", rule.host + (rule.path || ""));
-    label.type = "button";
-    label.setAttribute("aria-expanded", String(openRule === i));
-    label.addEventListener("click", () => {
-      openRule = openRule === i ? -1 : i;
-      render();
-    });
-    head.appendChild(label);
+    for (const { rule, index, badge } of group.entries) {
+      box.appendChild(ruleRow(rule, index, badge, competing));
+    }
+    host.appendChild(box);
+  }
+}
 
-    head.appendChild(el("span", `chip level-${rule.level}`, rule.level));
+function ruleRow(rule, i, badge, competing) {
+  const wrap = el("div", "rule");
+  const head = el("div", "rule-head");
 
-    const caret = el("button", "rule-caret", openRule === i ? "–" : "+");
-    caret.type = "button";
-    caret.setAttribute("aria-label", openRule === i ? "Collapse rule" : "Expand rule");
-    caret.addEventListener("click", () => {
-      openRule = openRule === i ? -1 : i;
-      render();
-    });
-    head.appendChild(caret);
+  // The badge is a match ORDER, not a priority the user sets: it is derived
+  // from how specific the rule is.
+  const order = el("span", "rule-order", badge);
+  order.title = competing
+    ? `Checked ${badge} of ${"the rules on this domain"} — most specific first.`
+    : "No other rule covers this domain, so nothing competes with it.";
+  head.appendChild(order);
 
-    wrap.appendChild(head);
-    if (openRule === i) wrap.appendChild(rulePanel(rule, i));
-    host.appendChild(wrap);
-  });
+  const toggle = () => {
+    openRule = openRule === i ? -1 : i;
+    render();
+  };
+
+  const label = el("button", "rule-label", rule.host + (rule.path || ""));
+  label.type = "button";
+  label.setAttribute("aria-expanded", String(openRule === i));
+  label.addEventListener("click", toggle);
+  head.appendChild(label);
+
+  head.appendChild(el("span", `chip level-${rule.level}`, rule.level));
+
+  const caret = el("button", "rule-caret", openRule === i ? "–" : "+");
+  caret.type = "button";
+  caret.setAttribute("aria-label", openRule === i ? "Collapse rule" : "Expand rule");
+  caret.addEventListener("click", toggle);
+  head.appendChild(caret);
+
+  wrap.appendChild(head);
+  if (openRule === i) wrap.appendChild(rulePanel(rule, i));
+  return wrap;
 }
 
 function rulePanel(rule, i) {
@@ -225,12 +242,15 @@ function renderSteps() {
 
 // --- 03 Presets -------------------------------------------------------------
 
+const STEP_SHORT = { wait: "1", task: "2", intent: "3", commit: "4" };
+
 function renderPresets() {
   const host = $("presets");
   host.innerHTML = "";
   for (const level of ["Light", "Standard", "Maximum"]) {
     const row = el("div", "preset-row");
     row.appendChild(el("span", "preset-name", level));
+    row.appendChild(stepChips(level));
     row.appendChild(
       presetField(cfg.presets[level].wait, "s", `${level} wait`, (v) =>
         patch((c) => { c.presets[level].wait = num(v, c.presets[level].wait); })
@@ -245,6 +265,52 @@ function renderPresets() {
     );
     host.appendChild(row);
   }
+}
+
+// Which of the four steps this level runs. A step switched off globally shows
+// as unavailable here rather than as a level choice, because it is not one.
+function stepChips(level) {
+  const wrap = el("span", "step-chips");
+  const effective = stepsFor({ level, host: "" }, cfg);
+  const onCount = STEP_KEYS.filter((k) => effective[k]).length;
+
+  for (const key of STEP_KEYS) {
+    const globallyOn = Boolean(cfg.steps[key]);
+    const on = effective[key];
+    // Never let a level end up with no steps at all — the gate would have
+    // nothing to show.
+    const isLastOn = on && onCount === 1;
+
+    const chip = el("button", "step-chip", STEP_SHORT[key]);
+    chip.type = "button";
+    chip.setAttribute("aria-pressed", String(on));
+    chip.setAttribute(
+      "aria-label",
+      `${level}: step ${STEP_SHORT[key]} (${key})`
+    );
+    if (!globallyOn) {
+      chip.disabled = true;
+      chip.title = `Step ${STEP_SHORT[key]} is switched off for every level above.`;
+    } else if (isLastOn) {
+      chip.setAttribute("aria-disabled", "true");
+      chip.title = "Keep one step on, or this level stops being a gate.";
+    } else {
+      chip.title = `${on ? "Skip" : "Run"} step ${STEP_SHORT[key]} on ${level}.`;
+      chip.addEventListener("click", () =>
+        patch((c) => {
+          const preset = c.presets[level];
+          // Materialise the override the first time it is touched.
+          if (!preset.steps) {
+            preset.steps = {};
+            for (const k of STEP_KEYS) preset.steps[k] = true;
+          }
+          preset.steps[key] = !preset.steps[key];
+        })
+      );
+    }
+    wrap.appendChild(chip);
+  }
+  return wrap;
 }
 
 function presetField(value, unit, label, onChange) {

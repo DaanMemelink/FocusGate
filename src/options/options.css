@@ -133,6 +133,34 @@
 
 /* --- Rules ---------------------------------------------------------------- */
 
+/* Rules that compete for the same URLs are tied together visually, because the
+   01/02/03 badges are meaningless without knowing what they are ordered
+   against. A group of one gets no chrome at all. */
+.rule-group.competing {
+  margin: 10px 0 18px;
+  border-left: 2px solid var(--ink);
+  padding-left: 14px;
+}
+.rule-group.competing .rule:last-child { border-bottom: none; }
+
+.group-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0 4px;
+}
+.group-domain {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+.group-note {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .rule { border-bottom: 1px solid var(--rule); }
 
 .rule-head {
@@ -369,6 +397,41 @@
 }
 .preset-name { flex: 1 1 auto; }
 .preset-cell { flex: 0 0 92px; text-align: right; }
+.preset-steps-head { flex: 0 0 132px; }
+
+/* Which of the four steps a level runs. */
+.step-chips {
+  flex: 0 0 132px;
+  display: flex;
+  gap: 5px;
+}
+.step-chip {
+  width: 28px;
+  padding: 6px 0;
+  border: 1px solid var(--chip-border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.step-chip[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.step-chip:disabled {
+  border-style: dashed;
+  color: var(--faint);
+  cursor: not-allowed;
+}
+.step-chip[aria-disabled="true"] { cursor: not-allowed; }
+
+@media (max-width: 620px) {
+  .preset-steps-head { display: none; }
+  .preset-row { flex-wrap: wrap; }
+  .step-chips { order: 3; flex-basis: 100%; }
+}
 
 .preset-row {
   display: flex;

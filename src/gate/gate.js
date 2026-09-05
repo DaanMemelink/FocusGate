@@ -9,7 +9,7 @@
 // way through. Nothing is written to storage until the hold completes — bailing
 // leaves no trace, by design.
 import { matchRule, ruleKey, isAllowed } from "../core/rules.js";
-import { waitSeconds, passMinutes } from "../core/levels.js";
+import { waitSeconds, passMinutes, stepsFor, STEP_KEYS } from "../core/levels.js";
 import { parseQuotes, getBundledClips } from "../core/defaults.js";
 import { makePuzzle, isCorrect } from "../core/puzzles.js";
 import {
@@ -405,7 +405,8 @@ async function start() {
   totalWait = waitSeconds(rule, settings, stats.cleared);
   passLength = passMinutes(rule, settings, stats.cleared);
 
-  steps = ["wait", "task", "intent", "commit"].filter((id) => settings.steps[id]);
+  const enabled = stepsFor(rule, settings);
+  steps = STEP_KEYS.filter((id) => enabled[id]);
   // The options page guarantees at least one step, but a hand-edited config
   // shouldn't produce a gate with no way through.
   if (!steps.length) steps = ["commit"];

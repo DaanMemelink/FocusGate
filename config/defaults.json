@@ -9,7 +9,9 @@
     "path:   optional, scopes a rule to part of a site, e.g. '/shorts'",
     "always: true gates around the clock; set false to use days/from/until",
     "days:   Monday-first",
-    "wait/unlock on a rule: null means 'use the level preset'"
+    "wait/unlock on a rule: null means 'use the level preset'",
+    "presets[level].steps: optional — narrows the global step toggles for that",
+    "  level only. Omit it and the level runs every step that is globally on."
   ],
 
   "rules": [
@@ -33,7 +35,11 @@
   "intentMin": 25,
 
   "presets": {
-    "Light": { "wait": 5, "unlock": 30 },
+    "Light": {
+      "wait": 5,
+      "unlock": 30,
+      "steps": { "wait": true, "task": false, "intent": false, "commit": true }
+    },
     "Standard": { "wait": 30, "unlock": 15 },
     "Maximum": { "wait": 60, "unlock": 5 }
   },

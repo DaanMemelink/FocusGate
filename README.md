@@ -90,10 +90,12 @@ Standard. Four levels:
 | **Standard** | The full four steps at the lengths you set. |
 | **Maximum** | Double wait, every step, and the shortest pass allowed. |
 
-The number in front of a rule in settings is **match order**, not a priority
-you set: rules covering the same registrable domain are numbered `01`, `02`… in
-the order they are checked, and a `·` means nothing else could ever match the
-same address, so that rule competes with no one.
+Rules that cover the same registrable domain are **grouped together** in
+settings under a domain header and listed most specific first, so the `01`,
+`02`, `03` badges read top to bottom. A rule with no siblings shows `·` and sits
+outside any group — nothing could ever match the same address, so it competes
+with no one. The numbering is derived from specificity, not stored, and it is
+not a priority you set.
 
 **Overlaps resolve by specificity, never by list order.** The score is
 `hostLabels × 1000 + hostLength × 10 + pathLength`, so an exact subdomain
@@ -150,6 +152,12 @@ skipped, and the options page refuses to let you turn off the last one.
    There is no ordinary button on this step.
 
 Esc bails from anywhere, and the bail link is always visible.
+
+**Steps are configurable per level.** The global toggles in section 02 say which
+steps exist at all; each level can narrow that further from the Steps column in
+section 03. Light ships running only **1 Wait** and **4 Commit** — a site you
+have marked as one you genuinely need shouldn't also demand a puzzle. A level
+can never be left with zero steps.
 
 ## Design
 
