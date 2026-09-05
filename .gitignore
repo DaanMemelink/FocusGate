@@ -1,7 +1,7 @@
-# Dependencies (once we add a build step)
-node_modules/
+# Design handoff bundle — reference material, not part of the extension.
+design_handoff_focus_gate/
 
-# Build / packaging output
+# Packaging output
 dist/
 build/
 *.zip

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Focus Gate</title>
+    <link rel="stylesheet" href="../ui/tokens.css" />
+    <link rel="stylesheet" href="gate.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="bar">
+        <div class="wordmark">Focus&nbsp;Gate</div>
+        <div class="bar-right">
+          <span id="host"></span>
+          <span class="level-chip" id="level"></span>
+        </div>
+      </header>
+
+      <main class="column">
+        <!-- Step rail. Hidden on the terminal screens. -->
+        <div id="rail">
+          <div class="rail-track"><div class="rail-fill" id="rail-fill"></div></div>
+          <ol class="rail-labels" id="rail-labels"></ol>
+        </div>
+
+        <div class="well">
+          <!-- 01 — Wait -->
+          <section class="step" id="step-wait" hidden>
+            <div class="countdown">
+              <svg width="92" height="92" viewBox="0 0 128 128" aria-hidden="true">
+                <circle cx="64" cy="64" r="52" fill="none" stroke="var(--rule)" stroke-width="3" />
+                <circle
+                  id="ring"
+                  cx="64" cy="64" r="52"
+                  fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="butt"
+                  stroke-dasharray="326.73" stroke-dashoffset="326.73"
+                  transform="rotate(-90 64 64)"
+                />
+              </svg>
+              <div>
+                <div class="clock tnum" id="clock" role="timer" aria-live="off">30s</div>
+                <div class="clock-note">Sit with it. No skip.</div>
+              </div>
+            </div>
+
+            <figure class="quote" id="quote" hidden>
+              <blockquote class="serif quote-text" id="quote-text"></blockquote>
+              <figcaption class="quote-by" id="quote-by"></figcaption>
+            </figure>
+
+            <div class="clip" id="clip" hidden>
+              <video class="clip-media" id="clip-media" muted playsinline></video>
+            </div>
+
+            <p class="restarted" id="restarted" hidden>You switched tabs. The timer started over.</p>
+          </section>
+
+          <!-- 02 — Task -->
+          <section class="step" id="step-task" hidden>
+            <div class="kicker" id="puzzle-label"></div>
+            <p class="serif prompt" id="puzzle-prompt"></p>
+            <input
+              class="underlined answer" id="answer" type="text"
+              placeholder="your answer" autocomplete="off" spellcheck="false"
+              aria-label="Your answer"
+            />
+            <div class="error" id="answer-error"></div>
+            <p class="standing-note">Get it wrong and you get a new one — never the same one twice.</p>
+          </section>
+
+          <!-- 03 — Intent -->
+          <section class="step" id="step-intent" hidden>
+            <div class="kicker">Step three — say it in writing</div>
+            <p class="serif prompt" id="intent-question"></p>
+            <textarea
+              class="underlined intent" id="intent" rows="3"
+              placeholder="be specific" aria-label="Why, right now?"
+            ></textarea>
+            <div class="meter">
+              <span id="intent-min-label">25 characters minimum</span>
+              <span class="tnum" id="intent-count">0 / 25</span>
+            </div>
+            <div class="last-excuse" id="last-excuse" hidden>
+              <div class="kicker">Last time you wrote</div>
+              <p class="serif excuse-text" id="excuse-text"></p>
+            </div>
+          </section>
+
+          <!-- 04 — Commit -->
+          <section class="step" id="step-commit" hidden>
+            <div class="kicker">Step four — the tally</div>
+            <dl class="tally">
+              <div class="tally-row">
+                <dt>Gates cleared today</dt>
+                <dd class="tnum" id="tally-cleared">0 times</dd>
+              </div>
+              <div class="tally-row">
+                <dt id="tally-time-label">Time spent</dt>
+                <dd class="tnum" id="tally-minutes">0 min</dd>
+              </div>
+            </dl>
+            <button class="hold" id="hold" type="button">
+              <span class="hold-fill" id="hold-fill"></span>
+              <span class="hold-label" id="hold-label">Hold to open</span>
+            </button>
+            <p class="fine-print" id="fine-print"></p>
+          </section>
+
+          <!-- Terminal states -->
+          <section class="step" id="step-cleared" hidden>
+            <h1 class="serif terminal">You're through.</h1>
+            <p class="terminal-note" id="cleared-note"></p>
+          </section>
+
+          <section class="step" id="step-bailed" hidden>
+            <h1 class="serif terminal">Good call.</h1>
+            <p class="terminal-note">Closing the tab. Nothing was logged against you.</p>
+          </section>
+        </div>
+
+        <footer class="foot" id="foot">
+          <button class="primary" id="advance" type="button">Continue</button>
+          <div class="bail-group">
+            <span class="keycap">esc</span>
+            <button class="bail" id="bail" type="button">Nope — take me back</button>
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <script type="module" src="gate.js"></script>
+  </body>
+</html>

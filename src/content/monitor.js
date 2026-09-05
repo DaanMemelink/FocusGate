@@ -1,76 +1,50 @@
-// Re-block monitor (content script).
+// Re-check monitor (content script).
 //
-// The service worker gates *navigations* before they load. But modern sites are
-// single-page apps: once you're past the gate you can browse for hours without
-// a real navigation, so the pass would never be re-checked. This script runs
-// inside open tabs and asks the worker to re-apply the gate when the pass
-// expires or focus hours begin — without needing a reload.
+// Deliberately dumb: it holds no rules, no settings and no pass logic, and it
+// never navigates. It asks the service worker "should this URL still be open?"
+// and the worker does the rest. Two reasons:
 //
-// Why message the worker instead of navigating here? A content script doing
-// location.replace() to an extension page is a *page-initiated* navigation,
-// which MV3 blocks unless the page is web-accessible. The worker's
-// chrome.tabs.update is privileged and has no such restriction.
+//   1. One source of truth. The worker already decides for every navigation.
+//   2. Content scripts can't be ES modules, so sharing core/ here would mean
+//      duplicating it. Asking costs one message.
+//
+// The worker's navigation listeners already cover moving around, including
+// SPA pushState. The only case left for this file is a pass expiring while the
+// user sits on a page without navigating at all.
 (function () {
-  const Focus = globalThis.Focus;
-  if (!Focus) return;
-
-  const CHECK_INTERVAL_MS = 10000;
-  let redirecting = false;
+  const CHECK_MS = 5000;
   let timer = null;
 
-  function stop() {
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
-  }
-
-  // chrome.runtime.id is undefined once the extension context is invalidated
-  // (e.g. the extension was reloaded/updated while this page stayed open).
-  // Using chrome.* APIs then yields errors and "chrome-extension://invalid/".
+  // chrome.runtime.id goes undefined once the extension context is invalidated
+  // — an extension reload kills content scripts in tabs that were already open.
+  // Nothing can be done from here at that point; the worker still gates on the
+  // next navigation.
   function contextValid() {
     try {
       return Boolean(chrome.runtime && chrome.runtime.id);
-    } catch (_) {
+    } catch {
       return false;
     }
   }
 
-  async function check() {
-    if (redirecting) return;
+  function check() {
     if (!contextValid()) {
-      stop(); // a fresh content script will take over on the next navigation
+      clearInterval(timer);
+      timer = null;
       return;
     }
-
     try {
-      const host = Focus.normalizeHost(location.hostname);
-      const settings = await Focus.getSettings();
-
-      if (!Focus.isBlockedHost(host, settings.blockedSites)) return;
-      if (!Focus.isWithinSchedule(settings.schedule)) return;
-      if (await Focus.hasPass(host)) return; // throws -> fail open (see catch)
-
-      // Time to re-gate. Let the worker perform the privileged redirect.
-      redirecting = true;
-      chrome.runtime
-        .sendMessage({ type: "reblock", target: location.href })
-        .catch((err) => {
-          // Message failing (e.g. context died mid-flight) shouldn't wedge us.
-          redirecting = false;
-          console.debug("[FocusGate] reblock request failed:", err);
-        });
-    } catch (err) {
-      // Reading the pass can throw if the worker hasn't widened session-storage
-      // access yet, or if the context just died. Fail open (don't gate wrongly).
-      console.debug("[FocusGate] monitor skipped a check:", err);
+      chrome.runtime.sendMessage({ type: "recheck", url: location.href }).catch(() => {
+        // Worker asleep or mid-restart. It will be asked again next tick.
+      });
+    } catch {
+      /* context died between the check and the send */
     }
   }
 
-  timer = setInterval(check, CHECK_INTERVAL_MS);
+  timer = setInterval(check, CHECK_MS);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") check();
   });
-  window.addEventListener("focus", check);
   check();
 })();

@@ -1,101 +1,168 @@
 # Focus Gate
 
-A browser extension that makes you pause before opening distracting sites
-during your chosen focus hours. When you navigate to a blocked site inside the
-time window, the extension redirects the tab to a full-screen prompt:
+A Chromium **Manifest V3** extension that puts deliberate friction between you
+and distracting sites instead of hard-blocking them. You can always get through
+— it just has to cost something.
 
-> **Wait. Do you really want to continue?**
-
-Only after you click **Continue anyway** does the site load. (A roadmap item is
-to require solving a math problem or puzzle first — see below.)
-
-## Stack
-
-- **Manifest V3** browser extension (Chrome / Edge; Firefox-compatible).
-- **Vanilla JavaScript** (ES2020+) — no build step, no dependencies.
-- **HTML + CSS** for the settings page, popup, and the gate page.
-
-No tooling is required to run it: load the folder as an unpacked extension.
+Vanilla HTML/CSS/JS, ES modules, **no build step and no dependencies**. Load the
+folder as an unpacked extension and it runs.
 
 ## Install (development)
 
-1. Open `chrome://extensions` (or `edge://extensions`).
-2. Enable **Developer mode** (the toggle, top-right).
-3. Click **Load unpacked** and select this project folder.
-4. Click the extension's toolbar icon → **Settings** to configure sites and
-   hours. The defaults block `instagram.com` and `youtube.com` from
-   **07:00–20:00** local time.
+1. Open `brave://extensions` (or `chrome://extensions`).
+2. Enable **Developer mode**.
+3. **Load unpacked** → select this folder.
+4. Click the toolbar icon to open settings.
 
 After editing any file, hit the **reload** ↻ button on the extension's card.
+Content scripts in tabs that were already open die on reload — close and reopen
+those tabs, or just navigate.
+
+## Layout
+
+```
+manifest.json
+package.json              Only so Node treats src/ as ESM for the tests. No deps.
+src/
+  core/                   Pure logic — no DOM, no chrome.*, directly unit-testable
+    rules.js              URL → rule matching, specificity, match-order badges
+    levels.js             Level presets, wait escalation, pass length
+    defaults.js           The config shape and first-run values
+    schedule.js           Focus hours, local day keys
+    puzzles.js            The three step-2 puzzles
+    storage.js            The only file that touches chrome.storage
+  background/
+    service-worker.js     Navigation interception; the only place gating is decided
+  content/
+    monitor.js            Dumb poller — holds no logic, just asks the worker
+  gate/                   The interstitial (gate.html/.css/.js)
+  options/                The settings page
+  ui/tokens.css           Design tokens, bundled @font-face, resets — shared
+  assets/fonts/           Instrument Serif + IBM Plex Mono, woff2, latin subset
+  assets/clips/           Bundled mp4s for the waiting room
+test/                     Zero-dependency runner: `npm test` or `node test/run.js`
+```
+
+`src/core/` is deliberately free of DOM and `chrome.*` so Node can import it
+straight into the tests. Everything that touches storage lives in `storage.js`.
 
 ## How it works
 
+### Rules
+
+A rule is `{ host, path, level, wait, unlock }`. `path` is optional, so parts of
+one site can differ — `youtube.com` on Light while `youtube.com/shorts` is
+Standard. Four levels:
+
+| Level | The gate |
+| ----- | -------- |
+| **Allowed** | Never gated. For the one corner of a site you actually need. |
+| **Light** | A short wait and a long pass. A speed bump, not a wall. |
+| **Standard** | The full four steps at the lengths you set. |
+| **Maximum** | Double wait, every step, and the shortest pass allowed. |
+
+**Overlaps resolve by specificity, never by list order.** The score is
+`hostLabels × 1000 + hostLength × 10 + pathLength`, so an exact subdomain
+outranks anything written against the parent, and within one host the longer
+path wins. `music.youtube.com` (Allowed) beats `youtube.com/shorts`, which beats
+bare `youtube.com`. Path matching is segment-aware: `/shorts` covers
+`/shorts/abc` but never `/shortstories`. The same score drives the match-order
+badges in settings, so the list can't tell you one thing while the matcher does
+another.
+
+### Interception
+
+Two listeners in the service worker, and both are needed:
+
+- `onBeforeNavigate` — real page loads.
+- `onHistoryStateUpdated` — in-page SPA navigation. Opening a Short from the
+  YouTube home page is a `pushState`: no document loads, so `onBeforeNavigate`
+  never fires and a path-scoped rule would silently never trigger. This one
+  fires *after* the URL changes, so a Short can flash up for an instant before
+  the gate replaces it. There is no earlier hook; late beats never.
+
+The content script holds no rules, settings or pass logic and never navigates.
+It polls the worker for the one case navigation events can't cover — a pass
+expiring while you sit on a page without moving. One source of truth, and a
+content script killed by an extension reload can't take the rules down with it.
+
+### Passes
+
+**Keyed by rule, not by host.** With `youtube.com` on Light and
+`youtube.com/shorts` on Standard, a host key would let the cheap five-second
+gate on `/watch` hand out an unlock that also covered `/shorts`.
+
+Pass length is `preset.unlock` (or the per-rule override), **doubled for video
+hosts** — a clip takes longer than a glance — minus two minutes per cave today,
+and **never below five minutes**, however many times you have caved. Each cave
+also doubles the next wait (30s → 60s → 120s…), capped at five minutes.
+
+Bailing increments nothing and writes nothing. That is a design rule, not an
+oversight: bailing is rewarded, never punished.
+
+### The gate
+
+Four steps, each a chance to give up; steps switched off in settings are
+skipped, and the options page refuses to let you turn off the last one.
+
+1. **Wait** — a countdown ring you have to watch. Looking away restarts it.
+   A quote rotates every 11s, or a bundled clip plays instead.
+2. **Task** — one puzzle: mental arithmetic, a six-character code typed
+   backwards, or a timestamped pledge. A wrong answer generates a **new**
+   puzzle, never a retry, so guessing buys nothing.
+3. **Intent** — write why (25 characters minimum), with your last excuse for
+   that rule quoted back at you.
+4. **Commit** — today's tally, then a button held down for three seconds.
+   There is no ordinary button on this step.
+
+Esc bails from anywhere, and the bail link is always visible.
+
+## Design
+
+Both surfaces are ported from the Claude Design handoff. Tokens, `@font-face`
+and resets live in one shared `src/ui/tokens.css`, so the gate and settings
+can't drift apart. **Fonts are bundled**, not fetched from Google — an extension
+page should make no network requests, and the gate must render instantly even
+offline.
+
+Two deliberate departures from the prototype:
+
+- **Focus rings are kept.** The prototype suppresses them because each input is
+  the only interactive thing in its region; a real extension needs visible
+  keyboard focus, so buttons, links and fields get a `:focus-visible` ring.
+- **Quotes carry optional attribution.** The prototype's settings page stores
+  plain lines while its gate shows `— Name`. Lines now accept an optional
+  `— Name` suffix, split on the last separator, so one textarea serves both.
+
+## Tests
+
+```bash
+npm test
 ```
-manifest.json                 Extension definition (MV3)
-src/
-  background/
-    service-worker.js         Intercepts navigation; redirects blocked sites to the gate
-  common/
-    defaults.js               Settings schema, storage + pass helpers (global `Focus`)
-    schedule.js               Time-window logic (local-time / UTC-offset aware)
-    sites.js                  Host normalization + matching (incl. subdomains)
-  content/
-    monitor.js                Re-applies the gate on open SPA tabs when a pass expires
-  interstitial/
-    interstitial.html/.css/.js  The "Wait…" gate page
-  options/                    Settings page (blocked sites, hours, grace period)
-  popup/                      Toolbar popup: status + link to settings
-```
 
-### Blocking flow (redirect-before-load)
+71 assertions, no dependencies. They cover the matcher (including the YouTube
+trio by name), specificity ordering, pass and wait arithmetic with the
+five-minute floor and video doubling, focus hours including windows that wrap
+past midnight, and puzzle generation and answer normalization.
 
-The service worker listens to `chrome.webNavigation.onBeforeNavigate` for
-top-level http(s) navigations. When the destination is a blocked host, inside
-the focus window, and has no active pass, it redirects the tab to
-`interstitial.html?target=<original-url>` **before the page loads** — so the
-target site's scripts, video, and audio never start. The gate page reads the
-target, shows it, and only navigates there once you choose to continue.
+## Decisions
 
-### Re-blocking open tabs (the monitor)
+Settled with the user; don't soften these without asking.
 
-`onBeforeNavigate` only fires on full page loads, but distracting sites are
-single-page apps — once you're in, you rarely navigate again. So `monitor.js`
-runs inside open tabs and re-checks every 10 seconds (and whenever the tab
-regains focus) whether the page should now be gated. If the pass has expired or
-focus hours have just started, it **messages the service worker**, which
-performs the redirect via `chrome.tabs.update`. The content script never
-navigates to the gate itself — a page-initiated navigation to an extension page
-is blocked by MV3 unless the page is web-accessible, and it would break entirely
-once the extension's context is invalidated (yielding `chrome-extension://invalid/`).
-Reading the pass from a content script requires the worker to widen
-`chrome.storage.session` access (`setAccessLevel`).
+- Minimum pass is **5 minutes**, always.
+- Standard 15 min · Light 30 · Maximum 5. Video hosts get double.
+- Passes are keyed by rule. Clearing `/watch` must not unlock `/shorts`.
+- Bailing is never logged and never counted.
+- No build step. Adding a framework is a change to that decision, not an
+  implementation detail.
 
-The shared `common/` files attach to a single global `Focus` object instead of
-using ES module `import`. They're loaded into the service worker (via
-`importScripts`) and into the gate/options/popup pages (via `<script>`).
+## Not built yet
 
-### Time zones / UTC offset
+Ranked, from the handoff:
 
-The schedule is stored as wall-clock `HH:MM` and compared against the browser's
-**local** time (`Date#getHours`/`getMinutes`). Because `new Date()` already
-reflects the machine's UTC offset, `07:00–20:00` means 07:00–20:00 wherever you
-are — no manual offset math needed. The settings page shows your detected time
-zone and offset so the behaviour is explicit. Windows that wrap past midnight
-(e.g. `22:00–06:00`) are supported.
-
-### The "pass"
-
-When you click **Continue anyway**, the site is unlocked for a configurable
-grace period (default 5 minutes) — stored as a per-host expiry timestamp in
-`chrome.storage.session`, so passes clear automatically when the browser closes.
-When the pass expires, the monitor re-applies the gate even if you never left
-the page.
-
-## Roadmap
-
-- [ ] Require a math problem / puzzle before "Continue" unlocks a site
-      (slots into `src/interstitial/`).
-- [ ] Per-site schedules instead of one global window.
-- [ ] Optional TypeScript + bundler once the logic grows.
-- [ ] Extension icons.
-```
+- [ ] Toolbar **popup** — today's tally, pause gating, quick-add the current site.
+- [ ] First-run **onboarding**.
+- [ ] **Stats** view.
+- [ ] **Rule tester** in settings: paste a URL, see which rule matches.
+- [ ] "Loosening a rule takes effect tomorrow, tightening takes effect now" —
+      the copy is in the settings footer, the asymmetry is not implemented.

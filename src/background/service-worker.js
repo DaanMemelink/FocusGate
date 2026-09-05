@@ -1,81 +1,89 @@
-// Background service worker (MV3).
+// Background service worker (MV3, ES module).
 //
-// Core responsibilities:
-//   1. Seed default settings on install.
-//   2. Redirect blocked navigations to the gate before they load
-//      (chrome.webNavigation.onBeforeNavigate).
-//   3. Re-redirect open tabs when the in-page monitor asks (pass expired or
-//      focus hours started). Doing the navigation here — not in the content
-//      script — keeps it a privileged, web_accessible_resources-free redirect.
-//   4. Widen chrome.storage.session so the monitor (a content script) can read
-//      the temporary passes.
-importScripts(
-  "../common/defaults.js",
-  "../common/schedule.js",
-  "../common/sites.js"
-);
+// This is the only place that decides whether a URL gets gated. The content
+// script deliberately holds no logic at all — it just asks. That keeps one
+// source of truth, and means a content script killed by an extension reload
+// can't take the rules down with it.
+import { matchRule, ruleKey, isAllowed } from "../core/rules.js";
+import { isWithinHours } from "../core/schedule.js";
+import { loadSettings, hasPass, prunePasses } from "../core/storage.js";
 
-const GATE_PAGE = chrome.runtime.getURL("src/interstitial/interstitial.html");
+const GATE_PAGE = chrome.runtime.getURL("src/gate/gate.html");
 
 function gateUrlFor(targetUrl) {
-  return GATE_PAGE + "?target=" + encodeURIComponent(targetUrl);
+  return `${GATE_PAGE}?target=${encodeURIComponent(targetUrl)}`;
 }
 
-// By default chrome.storage.session is readable only from trusted contexts.
-// The monitor content script needs to read passes, so widen access. This
-// persists for the browser session; we (re)apply it whenever the worker wakes.
-async function exposeSessionStorage() {
-  try {
-    await chrome.storage.session.setAccessLevel({
-      accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS",
-    });
-  } catch (err) {
-    console.error("[FocusGate] could not widen session storage access:", err);
-  }
+// The gate's own page must never be gated, and neither must anything that
+// isn't a normal web page.
+const TOP_LEVEL_HTTP = { url: [{ schemes: ["http", "https"] }] };
+
+// Returns the matched rule when `url` should be stopped right now, else null.
+async function verdictFor(url) {
+  const settings = await loadSettings();
+  const rule = matchRule(url, settings.rules);
+
+  if (!rule || isAllowed(rule)) return null;
+  if (!isWithinHours(settings)) return null;
+  if (await hasPass(ruleKey(rule))) return null;
+
+  return rule;
 }
 
-exposeSessionStorage();
-chrome.runtime.onStartup.addListener(exposeSessionStorage);
-
-chrome.runtime.onInstalled.addListener(async () => {
-  await exposeSessionStorage();
-  const current = await chrome.storage.sync.get(Focus.SETTINGS_KEY);
-  if (!current[Focus.SETTINGS_KEY]) {
-    await chrome.storage.sync.set({ [Focus.SETTINGS_KEY]: Focus.DEFAULT_SETTINGS });
-  }
-});
-
-// --- Redirect-before-load for fresh navigations ---------------------------
-async function handleNavigation({ url, tabId }) {
+async function gateIfNeeded(url, tabId) {
   try {
-    const host = Focus.normalizeHost(new URL(url).hostname);
-
-    const settings = await Focus.getSettings();
-    if (!Focus.isBlockedHost(host, settings.blockedSites)) return;
-    if (!Focus.isWithinSchedule(settings.schedule)) return;
-    if (await Focus.hasPass(host)) return;
-
+    if (typeof tabId !== "number" || tabId < 0) return;
+    const rule = await verdictFor(url);
+    if (!rule) return;
     await chrome.tabs.update(tabId, { url: gateUrlFor(url) });
   } catch (err) {
-    console.error("[FocusGate] navigation handling failed:", err);
+    console.error("[FocusGate] could not gate", url, err);
   }
 }
 
-// Only top-frame (frameId 0) http(s) navigations. The scheme filter keeps the
-// listener from firing on chrome:// pages and on our own extension gate page.
-chrome.webNavigation.onBeforeNavigate.addListener(
-  (details) => {
-    if (details.frameId === 0) handleNavigation(details);
-  },
-  { url: [{ schemes: ["http", "https"] }] }
-);
+// --- Navigation interception ------------------------------------------------
 
-// --- Re-block requests from the in-page monitor ---------------------------
-chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (msg && msg.type === "reblock" && sender.tab && typeof sender.tab.id === "number") {
-    chrome.tabs
-      .update(sender.tab.id, { url: gateUrlFor(msg.target) })
-      .catch((err) => console.error("[FocusGate] reblock redirect failed:", err));
-  }
-  // No async response needed.
+// Real page loads: typing a URL, following a link to a new document, reloading.
+chrome.webNavigation.onBeforeNavigate.addListener((d) => {
+  if (d.frameId === 0) gateIfNeeded(d.url, d.tabId);
+}, TOP_LEVEL_HTTP);
+
+// In-page navigation. Blocked sites are single-page apps: opening a Short from
+// the YouTube home page swaps the URL with history.pushState and never loads a
+// document, so onBeforeNavigate does NOT fire. Without this listener, a
+// path-scoped rule like youtube.com/shorts would simply never trigger.
+//
+// It fires after the URL has changed rather than before, so a Short can flash
+// up for an instant before the gate replaces it. There is no earlier hook for
+// in-page navigation; late beats never.
+chrome.webNavigation.onHistoryStateUpdated.addListener((d) => {
+  if (d.frameId === 0) gateIfNeeded(d.url, d.tabId);
+}, TOP_LEVEL_HTTP);
+
+// --- Requests from the content script ---------------------------------------
+// The monitor polls for one case the navigation events cannot cover: a pass
+// expiring while the user sits on a page without navigating at all.
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "recheck") return;
+  const tabId = sender.tab && sender.tab.id;
+  gateIfNeeded(msg.url, tabId);
+  sendResponse({ ok: true });
+  return false; // handled synchronously; the gating continues in the background
+});
+
+// --- Housekeeping -----------------------------------------------------------
+
+chrome.runtime.onInstalled.addListener(() => {
+  prunePasses().catch(() => {});
+  // Settings seed themselves on first read (loadSettings merges defaults), so
+  // there is nothing to write here — a missing key IS the default.
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  prunePasses().catch(() => {});
+});
+
+// Clicking the toolbar icon opens settings. The popup is a later milestone.
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.openOptionsPage();
 });
