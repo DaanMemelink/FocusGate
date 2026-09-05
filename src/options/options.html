@@ -54,10 +54,13 @@
       </div>
 
       <p class="note">
-        Rules on the same domain are grouped and numbered in the order they get
-        checked: the most specific one wins — longest host, then longest path.
-        Everything else never competes, so the order of this list does not
-        matter. A pass earned on one rule does not unlock another.
+        The number in front is <strong>match order</strong>, not priority you set.
+        Rules covering the same domain are numbered <code>01</code>, <code>02</code>…
+        in the order they get checked — most specific first: longest host, then
+        longest path. A <code>·</code> means nothing else could ever match the
+        same address, so that rule competes with no one. Either way the order of
+        this list does not matter. A pass earned on one rule does not unlock
+        another.
       </p>
 
       <!-- 02 — Gate steps -->

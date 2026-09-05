@@ -54,18 +54,24 @@ straight into the tests. Everything that touches storage lives in `storage.js`.
 ### Configuration
 
 Everything the extension ships with — rules, level presets, focus hours, step
-toggles, quotes, bundled clips — lives in **`config/defaults.json`**, imported
-as a JSON module (synchronous, works identically in the worker, the pages and
-Node). Edit it, reload the extension, then hit **Reset everything to defaults**
-in settings to adopt the change: a reload does not overwrite settings you have
-already saved. `npm test` validates the file, so a typo fails there rather than
-silently at load.
+toggles, quotes, bundled clips — lives in **`config/defaults.json`**. Edit it,
+reload the extension, then hit **Reset everything to defaults** in settings to
+adopt the change: a reload does not overwrite settings you have already saved.
+`npm test` validates the file, so a typo fails there rather than at runtime.
+
+It is read with `fetch(chrome.runtime.getURL(...))` rather than imported as a
+JSON module. Import attributes work in extension pages and in Node, but an MV3
+service worker is a different module context and support could not be
+confirmed — and a worker whose module graph fails to load dies silently, which
+means nothing is ever gated. Fetching a bundled resource is the boring,
+long-supported way, and `loadSettings()` was already async.
 
 ### The gate can be asleep
 
-Focus hours default to **Mon–Fri 09:00–18:00**. Outside them nothing is gated at
-all — which is correct, and indistinguishable from a broken install unless it
-says so. Both the toolbar popup and the top of the settings page therefore show
+**Always on** ships enabled, so a fresh install gates around the clock. Turn it
+off and focus hours apply (`days` Monday-first, plus `from`/`until`); outside
+them nothing is gated at all — which is correct, and indistinguishable from a
+broken install unless it says so. Both the toolbar popup and the top of the settings page therefore show
 whether the gate is awake and, if not, when it next will be
 (*"Saturday is not a focus day. Next awake Monday at 09:00."*). The settings
 strip reflects the **staged** config, so flipping *Always on* answers "will this
@@ -83,6 +89,11 @@ Standard. Four levels:
 | **Light** | A short wait and a long pass. A speed bump, not a wall. |
 | **Standard** | The full four steps at the lengths you set. |
 | **Maximum** | Double wait, every step, and the shortest pass allowed. |
+
+The number in front of a rule in settings is **match order**, not a priority
+you set: rules covering the same registrable domain are numbered `01`, `02`… in
+the order they are checked, and a `·` means nothing else could ever match the
+same address, so that rule competes with no one.
 
 **Overlaps resolve by specificity, never by list order.** The score is
 `hostLabels × 1000 + hostLength × 10 + pathLength`, so an exact subdomain
@@ -163,12 +174,13 @@ Two deliberate departures from the prototype:
 npm test
 ```
 
-88 assertions, no dependencies. They cover the matcher (including the YouTube
+89 assertions, no dependencies. They cover the matcher (including the YouTube
 trio by name), specificity ordering, pass and wait arithmetic with the
 five-minute floor and video doubling, focus hours including windows that wrap
 past midnight and the plain-language status text, puzzle generation and answer
 normalization, and the shape of `config/defaults.json` down to whether the
-bundled clips it names exist on disk.
+bundled clips it names exist on disk and that always-on really does gate at
+21:00 on a Saturday.
 
 ## Decisions
 

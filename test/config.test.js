@@ -1,8 +1,9 @@
 import { describe, it, eq, ok } from "./harness.js";
 import CONFIG from "../config/defaults.json" with { type: "json" };
-import { DEFAULT_SETTINGS, BUNDLED_CLIPS, parseQuotes } from "../src/core/defaults.js";
+import { getDefaultSettings, getBundledClips, parseQuotes } from "../src/core/defaults.js";
 import { LEVELS } from "../src/core/levels.js";
 import { matchRule, parsePattern } from "../src/core/rules.js";
+import { isWithinHours } from "../src/core/schedule.js";
 import { existsSync } from "node:fs";
 
 // config/defaults.json is hand-edited, so a typo there must fail here rather
@@ -58,29 +59,42 @@ describe("config/defaults.json is well-formed", () => {
   });
 });
 
+// getDefaultSettings() reads the file the same way the extension does — via
+// the Node branch of readConfig() — so this also proves that path works.
+const DEFAULTS = await getDefaultSettings();
+const CLIPS = await getBundledClips();
+
 describe("the config becomes the default settings", () => {
   it("quotes are joined into the textarea's newline form", () => {
-    eq(typeof DEFAULT_SETTINGS.quotes, "string");
-    eq(parseQuotes(DEFAULT_SETTINGS.quotes).length, CONFIG.quotes.length);
+    eq(typeof DEFAULTS.quotes, "string");
+    eq(parseQuotes(DEFAULTS.quotes).length, CONFIG.quotes.length);
   });
 
   it("attribution survives the round trip", () => {
-    const withAuthor = parseQuotes(DEFAULT_SETTINGS.quotes).find((q) => q.author);
+    const withAuthor = parseQuotes(DEFAULTS.quotes).find((q) => q.author);
     ok(withAuthor, "expected at least one attributed quote");
     ok(withAuthor.text.length && !withAuthor.text.includes("—"), "separator was not stripped");
   });
 
   it("wiring keys never leak into saved settings", () => {
-    eq(DEFAULT_SETTINGS.clipFiles, undefined);
-    eq(DEFAULT_SETTINGS._comment, undefined);
-    ok(Array.isArray(BUNDLED_CLIPS) && BUNDLED_CLIPS.length);
+    eq(DEFAULTS.clipFiles, undefined);
+    eq(DEFAULTS._comment, undefined);
+    ok(Array.isArray(CLIPS) && CLIPS.length);
   });
 
   it("the shipped rules behave as intended", () => {
-    const r = DEFAULT_SETTINGS.rules;
+    const r = DEFAULTS.rules;
     eq(matchRule("https://music.youtube.com/", r).level, "Allowed");
     eq(matchRule("https://www.youtube.com/watch?v=x", r).level, "Light");
     eq(matchRule("https://www.youtube.com/shorts/x", r).level, "Standard");
     eq(matchRule("https://instagram.com/", r).level, "Standard");
+  });
+
+  // The whole point of the default: a fresh install gates immediately, rather
+  // than looking broken until Monday morning.
+  it("ships gating around the clock", () => {
+    eq(DEFAULTS.always, true, "always-on must be the shipped default");
+    eq(isWithinHours(DEFAULTS, new Date("2026-09-05T21:00")), true, "Saturday night");
+    eq(isWithinHours(DEFAULTS, new Date("2026-09-07T03:00")), true, "Monday small hours");
   });
 });

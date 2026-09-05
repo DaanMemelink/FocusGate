@@ -4,7 +4,7 @@
 //   settings — sync,  so rules follow the user between machines
 //   passes   — local, device-specific and worthless to sync
 //   stats    — local, noisy per-day counters, reset daily
-import { DEFAULT_SETTINGS, cloneSettings } from "./defaults.js";
+import { getDefaultSettings, cloneSettings } from "./defaults.js";
 import { dayKey } from "./schedule.js";
 
 const SETTINGS_KEY = "focusGateSettings";
@@ -19,14 +19,15 @@ const STATS_KEY = "focusGateStats";
 const NESTED = ["steps", "presets"];
 
 export async function loadSettings() {
+  const defaults = await getDefaultSettings();
   const stored = (await chrome.storage.sync.get(SETTINGS_KEY))[SETTINGS_KEY] || {};
-  const settings = Object.assign(cloneSettings(DEFAULT_SETTINGS), stored);
+  const settings = Object.assign(cloneSettings(defaults), stored);
   for (const key of NESTED) {
-    settings[key] = Object.assign({}, DEFAULT_SETTINGS[key], stored[key] || {});
+    settings[key] = Object.assign({}, defaults[key], stored[key] || {});
   }
   // A rules array is either present and authoritative, or absent entirely —
   // never merged, or deleting a seeded rule would be impossible.
-  if (!Array.isArray(stored.rules)) settings.rules = cloneSettings(DEFAULT_SETTINGS.rules);
+  if (!Array.isArray(stored.rules)) settings.rules = cloneSettings(defaults.rules);
   return settings;
 }
 

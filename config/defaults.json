@@ -7,6 +7,7 @@
     "",
     "levels: Allowed | Light | Standard | Maximum",
     "path:   optional, scopes a rule to part of a site, e.g. '/shorts'",
+    "always: true gates around the clock; set false to use days/from/until",
     "days:   Monday-first",
     "wait/unlock on a rule: null means 'use the level preset'"
   ],
@@ -37,7 +38,7 @@
     "Maximum": { "wait": 60, "unlock": 5 }
   },
 
-  "always": false,
+  "always": true,
   "days": [true, true, true, true, true, false, false],
   "from": "09:00",
   "until": "18:00",

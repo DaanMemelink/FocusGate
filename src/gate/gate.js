@@ -10,7 +10,7 @@
 // leaves no trace, by design.
 import { matchRule, ruleKey, isAllowed } from "../core/rules.js";
 import { waitSeconds, passMinutes } from "../core/levels.js";
-import { parseQuotes, BUNDLED_CLIPS } from "../core/defaults.js";
+import { parseQuotes, getBundledClips } from "../core/defaults.js";
 import { makePuzzle, isCorrect } from "../core/puzzles.js";
 import {
   loadSettings,
@@ -42,6 +42,7 @@ let left = 0;
 let passLength = 0;
 let puzzle = null;
 let intentText = "";
+let clips = [];
 let timers = [];
 
 // --- Small helpers ----------------------------------------------------------
@@ -149,12 +150,12 @@ function renderWait() {
   show("step-wait");
 
   const quotes = parseQuotes(settings.quotes);
-  const useClip = settings.clips && Math.random() * 100 < settings.clipRate && BUNDLED_CLIPS.length;
+  const useClip = settings.clips && Math.random() * 100 < settings.clipRate && clips.length;
 
   if (useClip) {
     const clip = $("clip");
     const media = $("clip-media");
-    media.src = chrome.runtime.getURL(BUNDLED_CLIPS[Math.floor(Math.random() * BUNDLED_CLIPS.length)]);
+    media.src = chrome.runtime.getURL(clips[Math.floor(Math.random() * clips.length)]);
     media.loop = true;
     media.muted = true; // the only way autoplay is allowed to start
     // Shape isn't knowable from the path; the file's own metadata settles it.
@@ -377,6 +378,7 @@ function renderStep() {
 
 async function start() {
   settings = await loadSettings();
+  clips = await getBundledClips();
   rule = matchRule(target, settings.rules);
 
   // Nothing matched, or the rule was relaxed to Allowed while this page sat

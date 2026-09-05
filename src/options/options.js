@@ -3,7 +3,7 @@
 // Edits are staged against the last-saved snapshot: `cfg` is the working copy,
 // `saved` the JSON of what is in storage. When they differ the save bar appears.
 // Nothing reaches chrome.storage.sync until Save is pressed.
-import { DEFAULT_SETTINGS, cloneSettings, parseQuotes } from "../core/defaults.js";
+import { getDefaultSettings, cloneSettings, parseQuotes } from "../core/defaults.js";
 import { LEVELS, LEVEL_HINT, presetFor, floorNote } from "../core/levels.js";
 import { parsePattern, matchOrderBadges } from "../core/rules.js";
 import { loadSettings, saveSettings } from "../core/storage.js";
@@ -63,7 +63,15 @@ function renderRules() {
     const wrap = el("div", "rule");
 
     const head = el("div", "rule-head");
-    head.appendChild(el("span", "rule-order", badges[i]));
+    // The badge is a match ORDER, not a priority the user sets. A number means
+    // this rule competes with others on the same domain and is checked in that
+    // position; a dot means nothing else could ever match the same URL.
+    const order = el("span", "rule-order", badges[i]);
+    order.title =
+      badges[i] === "·"
+        ? "No other rule covers this domain, so nothing competes with it."
+        : `Checked ${badges[i]} of the rules on this domain — most specific first.`;
+    head.appendChild(order);
 
     const label = el("button", "rule-label", rule.host + (rule.path || ""));
     label.type = "button";
@@ -360,9 +368,9 @@ $("clips").addEventListener("click", () => patch((c) => { c.clips = !c.clips; })
 $("clip-rate").addEventListener("input", (e) => patch((c) => { c.clipRate = num(e.target.value, c.clipRate); }));
 $("quotes").addEventListener("input", (e) => patch((c) => { c.quotes = e.target.value; }));
 
-$("reset-all").addEventListener("click", () => {
+$("reset-all").addEventListener("click", async () => {
   openRule = -1;
-  cfg = cloneSettings(DEFAULT_SETTINGS);
+  cfg = await getDefaultSettings();
   render();
 });
 $("save").addEventListener("click", save);
