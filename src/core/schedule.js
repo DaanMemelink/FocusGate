@@ -34,6 +34,53 @@ export function isWithinHours(settings, date = new Date()) {
   return from < until ? now >= from && now < until : now >= from || now < until;
 }
 
+export const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+// When does the gate next wake up? Brute-forced a minute at a time over the
+// coming week: ~11k cheap checks, and it stays obviously correct for windows
+// that wrap past midnight and for arbitrary day patterns, which closed-form
+// arithmetic would not. Returns null if it never wakes (no days enabled).
+export function nextWake(settings, from = new Date()) {
+  if (settings.always) return null;
+  const cursor = new Date(from.getTime());
+  cursor.setSeconds(0, 0);
+  for (let i = 0; i < 8 * 24 * 60; i++) {
+    cursor.setMinutes(cursor.getMinutes() + 1);
+    if (isWithinHours(settings, cursor)) return cursor;
+  }
+  return null;
+}
+
+// A plain-language answer to "is this thing on?". The gate being asleep is a
+// perfectly normal state, but a silent one — without this, an extension outside
+// its focus hours is indistinguishable from a broken extension.
+export function describeSchedule(settings, now = new Date()) {
+  if (settings.always) return { awake: true, detail: "Always on." };
+
+  if (isWithinHours(settings, now)) {
+    return { awake: true, detail: `Focus hours are ${settings.from}–${settings.until}.` };
+  }
+
+  const dayOff = !(settings.days || [])[dayIndex(now)];
+  const wake = nextWake(settings, now);
+
+  if (!wake) {
+    return { awake: false, detail: "No focus days are selected, so nothing is ever gated." };
+  }
+
+  const sameDay = wake.toDateString() === now.toDateString();
+  const when = sameDay
+    ? `today at ${settings.from}`
+    : `${DAY_NAMES[dayIndex(wake)]} at ${settings.from}`;
+
+  return {
+    awake: false,
+    detail: dayOff
+      ? `${DAY_NAMES[dayIndex(now)]} is not a focus day. Next awake ${when}.`
+      : `Outside ${settings.from}–${settings.until}. Next awake ${when}.`,
+  };
+}
+
 // Local calendar day, used to key the per-day counters. Deliberately local
 // rather than UTC so "today" means the user's today.
 export function dayKey(date = new Date()) {

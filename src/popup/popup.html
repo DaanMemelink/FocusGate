@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Focus Gate</title>
+    <link rel="stylesheet" href="../ui/tokens.css" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body class="popup">
+    <div class="wordmark">Focus&nbsp;Gate</div>
+
+    <div class="status" id="status">
+      <span class="dot" id="dot"></span>
+      <span id="state">…</span>
+    </div>
+    <p class="detail" id="detail"></p>
+
+    <dl class="mini-tally" id="tally" hidden>
+      <div><dt>Cleared today</dt><dd class="tnum" id="cleared">0</dd></div>
+      <div><dt>Time granted</dt><dd class="tnum" id="minutes">0 min</dd></div>
+    </dl>
+
+    <button class="solid" id="settings" type="button">Open settings</button>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

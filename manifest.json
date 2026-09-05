@@ -3,17 +3,25 @@
   "name": "Focus Gate",
   "version": "1.0.0",
   "description": "Put deliberate friction between you and distracting sites, instead of hard-blocking them.",
-  "permissions": ["storage", "webNavigation"],
+  "permissions": [
+    "storage",
+    "webNavigation"
+  ],
   "background": {
     "service_worker": "src/background/service-worker.js",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
       "run_at": "document_idle",
       "all_frames": false,
-      "js": ["src/content/monitor.js"]
+      "js": [
+        "src/content/monitor.js"
+      ]
     }
   ],
   "options_ui": {
@@ -21,6 +29,7 @@
     "open_in_tab": true
   },
   "action": {
-    "default_title": "Focus Gate — settings"
+    "default_popup": "src/popup/popup.html",
+    "default_title": "Focus Gate"
   }
 }

@@ -7,6 +7,7 @@ import { DEFAULT_SETTINGS, cloneSettings, parseQuotes } from "../core/defaults.j
 import { LEVELS, LEVEL_HINT, presetFor, floorNote } from "../core/levels.js";
 import { parsePattern, matchOrderBadges } from "../core/rules.js";
 import { loadSettings, saveSettings } from "../core/storage.js";
+import { describeSchedule } from "../core/schedule.js";
 
 const $ = (id) => document.getElementById(id);
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -289,7 +290,17 @@ function renderWaitingRoom() {
 
 // --- Render / persist -------------------------------------------------------
 
+// Reflects the STAGED config, so toggling "Always on" answers "will this gate
+// anything?" before you commit to saving it.
+function renderStatus() {
+  const { awake, detail } = describeSchedule(cfg);
+  $("status-dot").classList.toggle("awake", awake);
+  $("status-state").textContent = awake ? "Gate awake" : "Gate asleep";
+  $("status-detail").textContent = detail;
+}
+
 function render() {
+  renderStatus();
   renderRules();
   renderSteps();
   renderPresets();

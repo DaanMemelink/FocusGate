@@ -23,6 +23,8 @@ those tabs, or just navigate.
 ```
 manifest.json
 package.json              Only so Node treats src/ as ESM for the tests. No deps.
+config/
+  defaults.json           Everything that ships on first run — edit here, not in code
 src/
   core/                   Pure logic — no DOM, no chrome.*, directly unit-testable
     rules.js              URL → rule matching, specificity, match-order badges
@@ -37,6 +39,7 @@ src/
     monitor.js            Dumb poller — holds no logic, just asks the worker
   gate/                   The interstitial (gate.html/.css/.js)
   options/                The settings page
+  popup/                  Toolbar popup: is the gate awake, and today's tally
   ui/tokens.css           Design tokens, bundled @font-face, resets — shared
   assets/fonts/           Instrument Serif + IBM Plex Mono, woff2, latin subset
   assets/clips/           Bundled mp4s for the waiting room
@@ -47,6 +50,26 @@ test/                     Zero-dependency runner: `npm test` or `node test/run.j
 straight into the tests. Everything that touches storage lives in `storage.js`.
 
 ## How it works
+
+### Configuration
+
+Everything the extension ships with — rules, level presets, focus hours, step
+toggles, quotes, bundled clips — lives in **`config/defaults.json`**, imported
+as a JSON module (synchronous, works identically in the worker, the pages and
+Node). Edit it, reload the extension, then hit **Reset everything to defaults**
+in settings to adopt the change: a reload does not overwrite settings you have
+already saved. `npm test` validates the file, so a typo fails there rather than
+silently at load.
+
+### The gate can be asleep
+
+Focus hours default to **Mon–Fri 09:00–18:00**. Outside them nothing is gated at
+all — which is correct, and indistinguishable from a broken install unless it
+says so. Both the toolbar popup and the top of the settings page therefore show
+whether the gate is awake and, if not, when it next will be
+(*"Saturday is not a focus day. Next awake Monday at 09:00."*). The settings
+strip reflects the **staged** config, so flipping *Always on* answers "will this
+gate anything?" before you save.
 
 ### Rules
 
@@ -140,10 +163,12 @@ Two deliberate departures from the prototype:
 npm test
 ```
 
-71 assertions, no dependencies. They cover the matcher (including the YouTube
+88 assertions, no dependencies. They cover the matcher (including the YouTube
 trio by name), specificity ordering, pass and wait arithmetic with the
 five-minute floor and video doubling, focus hours including windows that wrap
-past midnight, and puzzle generation and answer normalization.
+past midnight and the plain-language status text, puzzle generation and answer
+normalization, and the shape of `config/defaults.json` down to whether the
+bundled clips it names exist on disk.
 
 ## Decisions
 
@@ -160,7 +185,8 @@ Settled with the user; don't soften these without asking.
 
 Ranked, from the handoff:
 
-- [ ] Toolbar **popup** — today's tally, pause gating, quick-add the current site.
+- [ ] Toolbar **popup** — the status readout and today's tally are built; pause
+      gating and quick-add the current site are not, and it is undesigned.
 - [ ] First-run **onboarding**.
 - [ ] **Stats** view.
 - [ ] **Rule tester** in settings: paste a URL, see which rule matches.

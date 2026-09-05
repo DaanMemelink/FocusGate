@@ -1,64 +1,28 @@
-// The config shape, and what ships on first run.
+// The config shape, seeded from config/defaults.json.
 //
-// One object holds everything the user can change; it lives in
-// chrome.storage.sync (see settings.js). Keep this the single source of truth —
-// the options page renders from it and the gate reads from it.
+// Everything a user can change lives in that JSON file so it can be edited
+// without touching code. It is imported as a JSON module rather than fetched:
+// synchronous, works identically in the service worker, the pages and Node's
+// test runner, and a syntax error fails loudly at load instead of silently
+// falling back to something else.
+import CONFIG from "../../config/defaults.json" with { type: "json" };
 
-// Quotes are stored one per line. An optional " — Author" suffix is split off
-// when the gate renders it, which keeps the settings textarea a plain list
-// while still allowing attribution.
-export const QUOTE_SEPARATOR = " — ";
+// Quotes are one per line in the settings textarea, but a JSON array is far
+// nicer to edit by hand — so the config holds an array and it is joined here.
+// `clipFiles` is bundled-asset wiring, not a user setting, so it never becomes
+// part of the saved config.
+// `_comment` is documentation for whoever opens the JSON; strip it too.
+const { clipFiles, quotes, _comment, ...rest } = CONFIG;
 
-export const DEFAULT_SETTINGS = {
-  // Seeded with the rules the user asked to ship: YouTube is a speed bump,
-  // Shorts is not, and YouTube Music is exempt entirely.
-  rules: [
-    { host: "music.youtube.com", path: "", level: "Allowed", wait: null, unlock: null },
-    { host: "youtube.com", path: "", level: "Light", wait: null, unlock: null },
-    { host: "youtube.com", path: "/shorts", level: "Standard", wait: null, unlock: null },
-    { host: "instagram.com", path: "", level: "Standard", wait: null, unlock: null },
-    { host: "facebook.com", path: "", level: "Maximum", wait: null, unlock: null },
-    { host: "news.ycombinator.com", path: "", level: "Light", wait: null, unlock: null },
-  ],
-
-  // At least one of wait/task/intent/commit must stay on, or the gate stops
-  // being a gate. The options page enforces that.
-  steps: { wait: true, task: true, intent: true, commit: true, restart: true },
-
-  holdSeconds: 3,
-  intentMin: 25,
-
-  presets: {
-    Light: { wait: 5, unlock: 30 },
-    Standard: { wait: 30, unlock: 15 },
-    Maximum: { wait: 60, unlock: 5 },
-  },
-
-  // Focus hours. `days` is Monday-first.
-  always: false,
-  days: [true, true, true, true, true, false, false],
-  from: "09:00",
-  until: "18:00",
-
-  clips: true,
-  clipRate: 35,
-
-  quotes: [
-    "The days are long but the decades are short. — Sam Altman",
-    "Make something people want. — Y Combinator",
-    "You will never own your time until you start defending it.",
-    "Attention is the one currency you cannot borrow back.",
-    "Every scroll is a small vote for who you're becoming.",
-    "Nobody is coming to build it for you.",
-    "Boredom is the toll on the road to good work.",
-  ].join("\n"),
-};
+export const DEFAULT_SETTINGS = { ...rest, quotes: quotes.join("\n") };
 
 // Clips bundled with the extension. Paths are relative to the extension root.
-export const BUNDLED_CLIPS = ["src/assets/clips/discipline.mp4"];
+export const BUNDLED_CLIPS = clipFiles;
 
-// Split "text — Author" into its parts. Only the LAST separator counts, so a
-// quote containing a dash keeps it.
+// An optional " — Author" suffix on a quote line. Only the LAST separator
+// counts, so a quote containing a dash keeps it.
+export const QUOTE_SEPARATOR = " — ";
+
 export function parseQuote(line) {
   const text = String(line || "").trim();
   const at = text.lastIndexOf(QUOTE_SEPARATOR);
@@ -74,8 +38,7 @@ export function parseQuotes(blob) {
     .map(parseQuote);
 }
 
-// A deep-ish clone that survives structuredClone being unavailable in odd
-// contexts, used wherever the config is staged before saving.
+// Used wherever the config is staged before saving.
 export function cloneSettings(settings) {
   return JSON.parse(JSON.stringify(settings));
 }

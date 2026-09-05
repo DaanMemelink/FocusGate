@@ -1,0 +1,58 @@
+{
+  "_comment": [
+    "First-run configuration. Everything the extension ships with lives here so",
+    "it can be edited without touching code — change a value, reload the",
+    "extension, and hit 'Reset everything to defaults' in settings to adopt it",
+    "(existing saved settings are not overwritten by a reload).",
+    "",
+    "levels: Allowed | Light | Standard | Maximum",
+    "path:   optional, scopes a rule to part of a site, e.g. '/shorts'",
+    "days:   Monday-first",
+    "wait/unlock on a rule: null means 'use the level preset'"
+  ],
+
+  "rules": [
+    { "host": "music.youtube.com", "path": "", "level": "Allowed", "wait": null, "unlock": null },
+    { "host": "youtube.com", "path": "", "level": "Light", "wait": null, "unlock": null },
+    { "host": "youtube.com", "path": "/shorts", "level": "Standard", "wait": null, "unlock": null },
+    { "host": "instagram.com", "path": "", "level": "Standard", "wait": null, "unlock": null },
+    { "host": "facebook.com", "path": "", "level": "Maximum", "wait": null, "unlock": null },
+    { "host": "news.ycombinator.com", "path": "", "level": "Light", "wait": null, "unlock": null }
+  ],
+
+  "steps": {
+    "wait": true,
+    "task": true,
+    "intent": true,
+    "commit": true,
+    "restart": true
+  },
+
+  "holdSeconds": 3,
+  "intentMin": 25,
+
+  "presets": {
+    "Light": { "wait": 5, "unlock": 30 },
+    "Standard": { "wait": 30, "unlock": 15 },
+    "Maximum": { "wait": 60, "unlock": 5 }
+  },
+
+  "always": false,
+  "days": [true, true, true, true, true, false, false],
+  "from": "09:00",
+  "until": "18:00",
+
+  "clips": true,
+  "clipRate": 35,
+  "clipFiles": ["src/assets/clips/discipline.mp4"],
+
+  "quotes": [
+    "The days are long but the decades are short. — Sam Altman",
+    "Make something people want. — Y Combinator",
+    "You will never own your time until you start defending it.",
+    "Attention is the one currency you cannot borrow back.",
+    "Every scroll is a small vote for who you're becoming.",
+    "Nobody is coming to build it for you.",
+    "Boredom is the toll on the road to good work."
+  ]
+}

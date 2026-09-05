@@ -24,6 +24,14 @@
         have the judgement to choose it.
       </p>
 
+      <!-- Outside its focus hours the gate does nothing, which looks identical
+           to a broken install unless it says so. -->
+      <div class="gate-status" id="gate-status">
+        <span class="dot" id="status-dot"></span>
+        <span class="status-state" id="status-state"></span>
+        <span class="status-detail" id="status-detail"></span>
+      </div>
+
       <!-- 01 — Rules -->
       <div class="section-head with-action">
         <div>

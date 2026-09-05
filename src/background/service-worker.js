@@ -82,8 +82,3 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onStartup.addListener(() => {
   prunePasses().catch(() => {});
 });
-
-// Clicking the toolbar icon opens settings. The popup is a later milestone.
-chrome.action.onClicked.addListener(() => {
-  chrome.runtime.openOptionsPage();
-});
