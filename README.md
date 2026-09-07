@@ -75,6 +75,19 @@ reload the extension, then hit **Reset everything to defaults** in settings to
 adopt the change: a reload does not overwrite settings you have already saved.
 `npm test` validates the file, so a typo fails there rather than at runtime.
 
+**`config/local.json` overrides it**, and is gitignored. It exists mainly for
+clips: the repo ships none, so `clipFiles` in `defaults.json` must stay empty or
+a fresh clone points at a file it does not have — but the clips you drop into
+`src/assets/clips/` still need listing somewhere, and editing a tracked file to
+do it means carrying a change you must never commit. Put it here instead:
+
+```json
+{ "clipFiles": ["src/assets/clips/your-clip.mp4"] }
+```
+
+The merge is shallow, so an override replaces a whole top-level key rather than
+being merged into it. It is never included in the store package.
+
 It is read with `fetch(chrome.runtime.getURL(...))` rather than imported as a
 JSON module. Import attributes work in extension pages and in Node, but an MV3
 service worker is a different module context and support could not be

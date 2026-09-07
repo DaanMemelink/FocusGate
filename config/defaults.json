@@ -20,16 +20,43 @@
     "presets[level].steps: optional — narrows the global step toggles for that",
     "  level only. Omit it and the level runs every step that is globally on."
   ],
-
   "rules": [
-    { "host": "music.youtube.com", "path": "", "level": "Allowed", "wait": null, "unlock": null },
-    { "host": "youtube.com", "path": "", "level": "Light", "wait": null, "unlock": null },
-    { "host": "youtube.com", "path": "/shorts", "level": "Standard", "wait": null, "unlock": null },
-    { "host": "instagram.com", "path": "", "level": "Standard", "wait": null, "unlock": null },
-    { "host": "facebook.com", "path": "", "level": "Maximum", "wait": null, "unlock": null },
-    { "host": "news.ycombinator.com", "path": "", "level": "Light", "wait": null, "unlock": null }
+    {
+      "host": "music.youtube.com",
+      "path": "",
+      "level": "Allowed",
+      "wait": null,
+      "unlock": null
+    },
+    {
+      "host": "youtube.com",
+      "path": "",
+      "level": "Light",
+      "wait": null,
+      "unlock": null
+    },
+    {
+      "host": "youtube.com",
+      "path": "/shorts",
+      "level": "Standard",
+      "wait": null,
+      "unlock": null
+    },
+    {
+      "host": "instagram.com",
+      "path": "",
+      "level": "Standard",
+      "wait": null,
+      "unlock": null
+    },
+    {
+      "host": "facebook.com",
+      "path": "",
+      "level": "Maximum",
+      "wait": null,
+      "unlock": null
+    }
   ],
-
   "steps": {
     "wait": true,
     "task": true,
@@ -37,37 +64,64 @@
     "commit": true,
     "restart": true
   },
-
   "holdSeconds": 3,
   "intentMin": 25,
-
   "presets": {
     "Light": {
       "wait": 5,
       "unlock": 30,
-      "steps": { "wait": true, "task": false, "intent": false, "commit": true }
+      "steps": {
+        "wait": true,
+        "task": false,
+        "intent": false,
+        "commit": true
+      }
     },
-    "Standard": { "wait": 30, "unlock": 15 },
-    "Maximum": { "wait": 60, "unlock": 5 }
+    "Standard": {
+      "wait": 30,
+      "unlock": 15
+    },
+    "Maximum": {
+      "wait": 60,
+      "unlock": 5
+    }
   },
-
   "always": true,
-  "days": [true, true, true, true, true, false, false],
+  "days": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false
+  ],
   "from": "09:00",
   "until": "18:00",
-
   "clips": true,
   "clipRate": 35,
   "clipSound": true,
   "clipFiles": [],
-
   "quotes": [
     "The days are long but the decades are short. — Sam Altman",
     "Make something people want. — Y Combinator",
+    "Focusing is about saying no. — Steve Jobs",
+    "Do things that don't scale. — Paul Graham",
+    "How we spend our days is, of course, how we spend our lives. — Annie Dillard",
+    "If you are not embarrassed by the first version of your product, you've launched too late. — Reid Hoffman",
+    "What stands in the way becomes the way. — Marcus Aurelius, tr. Gregory Hays",
+    "Amateurs sit and wait for inspiration, the rest of us just get up and go to work. — Stephen King",
     "You will never own your time until you start defending it.",
     "Attention is the one currency you cannot borrow back.",
     "Every scroll is a small vote for who you're becoming.",
     "Nobody is coming to build it for you.",
-    "Boredom is the toll on the road to good work."
+    "Boredom is the toll on the road to good work.",
+    "Nothing on the other side of this page is waiting for you.",
+    "The feed ends when you end it, and not one second before.",
+    "You already know what this costs. That is why you are still reading.",
+    "Ten minutes here is ten minutes that was going somewhere else.",
+    "You are not looking for anything. That is the whole problem.",
+    "The work you are avoiding will still be there, and it will be harder.",
+    "This is the part where you decide what kind of afternoon it was."
   ]
 }

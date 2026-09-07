@@ -84,12 +84,14 @@ claiming nothing ever leaves the machine.
 `PRIVACY.md` in this repo, which needs the repo to be public:
 
 ```
-https://github.com/DaanMemelink/FocusExtension/blob/main/PRIVACY.md
+https://github.com/DaanMemelink/FocusGate/blob/main/PRIVACY.md
 ```
 
-A rendered GitHub page is an accepted policy URL. If you would rather it not be
-a code-host page, turn on GitHub Pages for the repo and point the field at that
-instead — same file, nicer address.
+A rendered GitHub page is an accepted policy URL, and it is what the listing
+uses today. If you later move it to a domain of your own — focusgate.daanmemelink.nl,
+say — update the field in the dashboard and the contact line at the bottom of
+PRIVACY.md. The store lets you change the URL after publishing, so there is no
+need to have the domain ready first.
 
 ## Permission justifications
 

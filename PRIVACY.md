@@ -76,4 +76,4 @@ above updated. The commit history of this file is the full record.
 ## Contact
 
 Open an issue at
-<https://github.com/DaanMemelink/FocusExtension/issues>.
+<https://github.com/DaanMemelink/FocusGate/issues>.

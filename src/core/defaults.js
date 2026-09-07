@@ -11,14 +11,33 @@
 // boring way to do this, and loadSettings() was already async.
 const CONFIG_PATH = "config/defaults.json";
 
+// An optional, gitignored override sitting next to it. This exists for one
+// reason: clips. The repo ships none, so `clipFiles` in defaults.json has to be
+// empty or a fresh clone points at a file it does not have — but the clips you
+// drop into src/assets/clips/ still need listing somewhere, and editing a
+// tracked file to do it means carrying a change you must never commit.
+// config/local.json is that somewhere. Absent, which is the normal case,
+// nothing changes.
+const LOCAL_PATH = "config/local.json";
+
 let pending = null;
 
-async function readConfig() {
+// Shallow merge: an override replaces a whole top-level key rather than being
+// deep-merged into it. Half-overriding `presets` or `steps` would be a subtler
+// thing to reason about than simply restating the one you mean.
+export function mergeConfig(base, override) {
+  return Object.assign({}, base, override || {});
+}
+
+async function readJson(path, { optional = false } = {}) {
   // Extension: worker, gate, options and popup all resolve bundled resources
   // the same way.
   if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getURL) {
-    const res = await fetch(chrome.runtime.getURL(CONFIG_PATH));
-    if (!res.ok) throw new Error(`${CONFIG_PATH}: HTTP ${res.status}`);
+    const res = await fetch(chrome.runtime.getURL(path));
+    if (!res.ok) {
+      if (optional) return null;
+      throw new Error(`${path}: HTTP ${res.status}`);
+    }
     return res.json();
   }
   // Node (the test runner). Dynamic so a browser never tries to resolve it.
@@ -26,8 +45,21 @@ async function readConfig() {
     import("node:fs/promises"),
     import("node:url"),
   ]);
-  const url = new URL(`../../${CONFIG_PATH}`, import.meta.url);
-  return JSON.parse(await readFile(fileURLToPath(url), "utf8"));
+  const file = fileURLToPath(new URL(`../../${path}`, import.meta.url));
+  try {
+    return JSON.parse(await readFile(file, "utf8"));
+  } catch (err) {
+    if (optional && err.code === "ENOENT") return null;
+    throw err;
+  }
+}
+
+async function readConfig() {
+  const base = await readJson(CONFIG_PATH);
+  // A malformed local override is worth failing on — it was written on purpose
+  // and silently ignoring it would be baffling. A missing one is not.
+  const local = await readJson(LOCAL_PATH, { optional: true });
+  return mergeConfig(base, local);
 }
 
 // Cached as a promise so concurrent callers share one read. A malformed config

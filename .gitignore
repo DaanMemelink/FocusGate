@@ -7,6 +7,10 @@ design_handoff_focus_gate/
 src/assets/clips/*
 !src/assets/clips/.gitkeep
 
+# Local config override — your own clip paths and any settings you want to
+# differ from what ships. See config/defaults.json.
+config/local.json
+
 # Packaging output
 dist/
 build/
