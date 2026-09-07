@@ -69,65 +69,119 @@ dark surfaces, and a transparent dark mark disappears against a dark one.
 
 ## Privacy
 
+The dashboard's Privacy tab has four free-text fields (1000 characters each),
+a data-usage checklist, three attestations and a policy URL. Paste these.
+
 **Single purpose**
 
-> Adding a configurable delay and confirmation step before the user opens
-> websites they have chosen to limit.
+```
+Focus Gate has one purpose: to interrupt navigation to websites the user has chosen to gate, and require a short deliberate delay before the page opens.
 
-**Data usage** — tick nothing. The extension collects no user data. Settings,
-per-rule unlock timers, a per-day counter and the last reason you typed are
-stored with `chrome.storage` and are never sent anywhere by the extension. There
-is no network request of any kind at runtime: fonts are bundled, and there is no
-analytics or remote configuration.
+The user lists sites and paths in the extension's settings. When a navigation matches one of those rules, the extension redirects that tab to its own gate page, which asks the user to sit through a countdown, answer one small puzzle, write why they are going there, and hold a button to confirm. Only then is the tab sent on to the original URL. Backing out is always one click away and records nothing.
 
-Be aware of one nuance when answering: settings live in `chrome.storage.sync`,
-which the *browser* replicates between the user's own devices when they have
-browser sync enabled. That is a browser feature operating under the vendor's
-policy, not a transfer the extension performs, and it does not make this a
-data-collecting extension — but PRIVACY.md states it plainly rather than
-claiming nothing ever leaves the machine.
+Every permission requested exists to serve that single behaviour. The extension has no second mode, no account, no analytics, and no feature unrelated to gating the sites the user has listed.
+```
 
-**Remote code** — No. All JavaScript is in the package.
+**Data usage — tick "Web history". Tick nothing else.**
 
-**Privacy policy URL** — required whenever a listing is published. Use
-`PRIVACY.md` in this repo, which needs the repo to be public:
+This is not the obvious answer and it is worth being clear about why. The
+extension sends nothing anywhere, but Google's disclosure requirement is not
+about transmission:
+
+> Extensions are required to disclose how they handle user data, even when data
+> is processed or stored locally on a user's device and is not transmitted to
+> external servers or third parties.
+
+and its definition of web browsing activity is
+
+> any information about the websites or other web resources a user requests or
+> interacts with, including the domains or URLs the browser interacts with.
+
+`focusGateStats` holds a per-day count of cleared gates keyed by rule, and
+`focusGatePasses` holds an unlock expiry keyed by rule. A rule key is a hostname
+and optional path. Stored on the device or not, that is a record of domains the
+browser interacted with, and it is covered.
+
+The other boxes stay empty. Nothing reads page content. The reason the user
+types at step three is their own note to themselves, kept locally against a rule
+they created; it is not personally identifiable information the extension seeks,
+nor a personal communication, and declaring it as either would misdescribe it on
+the public listing. It is disclosed in PRIVACY.md, which is where it belongs.
+
+**The three attestations** — all three can be ticked truthfully. No user data is
+sold or transferred to third parties, because none is transferred at all; none is
+used for anything but gating the user's own listed sites; and none touches
+creditworthiness or lending.
+
+**Remote code** — No. All JavaScript is in the package. There is no `eval`, no
+`new Function`, no `importScripts`, and no script loaded from a CDN. The two
+typefaces are bundled rather than fetched from a font service, specifically so
+that opening the gate tells nobody anything.
+
+One nuance worth understanding before answering: settings live in
+`chrome.storage.sync`, which the *browser* replicates between the user's own
+devices when they have browser sync switched on. That is a browser feature under
+the vendor's policy, not a transfer the extension performs. PRIVACY.md states it
+plainly rather than claiming nothing ever leaves the machine.
+
+**Privacy policy URL**
 
 ```
 https://github.com/DaanMemelink/FocusGate/blob/main/PRIVACY.md
 ```
 
-A rendered GitHub page is an accepted policy URL, and it is what the listing
-uses today. If you later move it to a domain of your own — focusgate.daanmemelink.nl,
-say — update the field in the dashboard and the contact line at the bottom of
-PRIVACY.md. The store lets you change the URL after publishing, so there is no
-need to have the domain ready first.
+A rendered GitHub page is an accepted policy URL and is what the listing uses
+today; it needs the repo to be public, which it is. If you later move it to a
+domain of your own — focusgate.daanmemelink.nl, say — update the field in the
+dashboard and the contact line at the bottom of PRIVACY.md. The store lets you
+change the URL after publishing, so the domain does not have to exist first.
 
 ## Permission justifications
 
-Reviewers ask for these individually. Say the least that is true.
+One field each, and the host-permission answer is the one that decides how long
+review takes. Say the least that is true.
 
 **`storage`**
 
-> Stores the user's own settings (which sites are gated and how), the timer that
-> keeps a site open after they get through, and a per-day counter shown on the
-> final step. Local to the browser; nothing is transmitted.
+```
+storage saves the user's own configuration and the small amount of state the gate needs.
+
+In chrome.storage.sync: the rules the user created (which sites and paths to gate, and at which of four levels), which gate steps are enabled, wait and unlock durations, focus hours, and the user's list of quotes. Sync is used so a user's own settings follow them between their own devices through the browser's built-in mechanism, the same way bookmarks do.
+
+In chrome.storage.local: an unlock expiry per rule, so a site the user has cleared stays open for the length they chose; a per-day count of gates cleared and minutes granted per rule, which drives the tally on the gate's final step and the escalating wait; and the last reason the user typed for each rule, which step three quotes back to them.
+
+Nothing is transmitted anywhere. The extension makes no network requests at runtime.
+```
 
 **`webNavigation`**
 
-> The extension must show its gate before a listed site renders. It listens to
-> `onBeforeNavigate` for ordinary page loads and `onHistoryStateUpdated` for
-> in-page navigation, which is how sites like YouTube open a Short without
-> loading a document. Only the URL is inspected, only to decide whether the
-> user's own rules match it.
+```
+webNavigation is what lets the gate appear before the distracting page renders, which is the whole point of the extension.
 
-**Content script on `http://*/*` and `https://*/*`**
+The service worker listens to webNavigation.onBeforeNavigate to inspect a destination URL as the navigation begins, and to webNavigation.onHistoryStateUpdated to catch single-page apps that change route via pushState without a full navigation. That second case is necessary: moving from youtube.com to youtube.com/shorts has to be able to match a different rule, and a pushState route change is not a network request, so a declarativeNetRequest redirect cannot see it.
 
-> A small script re-checks the current page when its unlock timer expires,
-> because that moment produces no navigation event. It contains no logic of its
-> own, reads no page content, and only sends the current URL to the extension's
-> service worker to ask whether the gate should reappear. The match pattern is
-> broad because the user chooses which sites are gated, and that list can be any
-> site.
+The URL is compared in memory against the user's own rules. If nothing matches it is discarded immediately. If a rule matches and no unlock is active, the tab is redirected to the extension's own gate page. No other webNavigation event is used, no URL is written to storage, and nothing leaves the device.
+```
+
+**Host permissions** — the dashboard asks for this because `content_scripts`
+declares a match pattern, even though the manifest has no `host_permissions`
+key. A pattern this broad triggers a slower, more thorough review.
+
+```
+The extension declares one content script matching http://*/* and https://*/*. It is deliberately minimal: it holds no rules and no logic, reads nothing from the page, and never touches the DOM or page content.
+
+Every five seconds, and when a tab becomes visible again, it passes the current page URL to this extension's own service worker and asks whether that page should now be gated again. The worker answers using the user's own rules.
+
+This covers the one case the navigation listeners cannot: an unlock expiring while the user sits on a page without navigating at all. Someone who opens a gated site and stays there for an hour would otherwise never be re-gated once their unlock ran out.
+
+The pattern has to be broad because the user decides which sites are gated, and that can be any site. The URL goes only to this extension, is matched in memory, and is never stored or transmitted.
+```
+
+If that delay ever becomes the thing standing between you and shipping, the
+content script is the only reason the pattern is broad, and it exists for one
+narrow case: an unlock expiring while the user sits still on a page. Dropping it
+would cost that case and nothing else. It is a real feature, so it is worth
+keeping — but it is a choice, not a requirement.
 
 ## Screenshots
 
