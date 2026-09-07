@@ -21,6 +21,9 @@ const INCLUDE_FILES = ["manifest.json"];
 // Matched against the archive-relative path.
 const EXCLUDE = [
   /^src\/assets\/clips\//, // third-party media — see the note above
+  // Only the four manifest icons are loaded at runtime; the lockup is inlined
+  // SVG. The rest of src/assets/icons is source and press art.
+  /^src\/assets\/icons\/(mark|icon-128-inverse)/,
   /(^|\/)\.DS_Store$/,
   /(^|\/)Thumbs\.db$/,
 ];

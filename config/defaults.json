@@ -10,6 +10,11 @@
     "always: true gates around the clock; set false to use days/from/until",
     "days:   Monday-first",
     "wait/unlock on a rule: null means 'use the level preset'",
+    "clipFiles: ships empty. Clips live in src/assets/clips/, which is",
+    "  gitignored so no video is redistributed with the repo or the store",
+    "  build. Drop your own .mp4 in there and add its path here to use it;",
+    "  with none listed the gate shows a quote, which is the intended",
+    "  fallback rather than a failure.",
     "clipSound: try to play clips with sound. Browsers may refuse; the gate",
     "  then falls back to muted and offers an unmute button.",
     "presets[level].steps: optional — narrows the global step toggles for that",
@@ -54,7 +59,7 @@
   "clips": true,
   "clipRate": 35,
   "clipSound": true,
-  "clipFiles": ["src/assets/clips/discipline.mp4"],
+  "clipFiles": [],
 
   "quotes": [
     "The days are long but the decades are short. — Sam Altman",

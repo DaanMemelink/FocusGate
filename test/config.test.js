@@ -79,7 +79,9 @@ describe("the config becomes the default settings", () => {
   it("wiring keys never leak into saved settings", () => {
     eq(DEFAULTS.clipFiles, undefined);
     eq(DEFAULTS._comment, undefined);
-    ok(Array.isArray(CLIPS) && CLIPS.length);
+    // Shipping no clips is correct: none are redistributed. The point of this
+    // assertion is that clipFiles stays wiring rather than becoming a setting.
+    ok(Array.isArray(CLIPS), "clipFiles should still resolve to an array");
   });
 
   it("the shipped rules behave as intended", () => {
