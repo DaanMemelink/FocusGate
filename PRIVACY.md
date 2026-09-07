@@ -48,7 +48,10 @@ browser sync off and it stays local. I never receive it either way.
   that term covers any information about the domains your browser interacts
   with, whether or not it leaves the device. It is not a browsing log, and it
   never goes anywhere, but calling it nothing at all would be sleight of hand.
-- **Page content.** Nothing reads the contents of any page you visit.
+- **Page content.** Nothing reads the contents of any page you visit. The
+  extension asks for no access to any website and installs no script into any
+  page, so this is not a promise about restraint — there is no mechanism by
+  which it could read a page even if it wanted to.
 - **Anything about sites you have not listed.** A URL that matches no rule is
   discarded immediately.
 - **Anything when you back out.** Choosing "take me back" at the gate records
@@ -59,11 +62,17 @@ browser sync off and it stays local. I never receive it either way.
 - **`storage`** — to save the settings and timers above.
 - **`webNavigation`** — to notice a navigation before the page renders, so the
   gate can appear first. Only the URL is examined, and only against your rules.
-- **Access to page URLs (`http://*/*`, `https://*/*`)** — a small script asks
-  the extension whether the current page should be gated again once its unlock
-  timer expires. It sends only the current URL, to the extension itself. The
-  pattern is broad because you decide which sites are gated, and that can be any
-  site.
+  A URL matching none of them is discarded immediately.
+- **`alarms`** — to set a single timer for the moment an unlock runs out, so a
+  site you are still sitting on gets gated again rather than staying open
+  silently.
+
+There is deliberately no fourth entry. Focus Gate requests **no access to any
+website** and installs no script into any page. An earlier version did: a small
+script on every site you visited, asking the extension whether the current page
+should be gated again. It worked, but watching the handful of sites you chose
+meant being able to reach all of them, and that is a poor trade to ask you to
+accept. The alarm above does the same job from inside the extension.
 
 ## Third parties
 

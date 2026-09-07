@@ -11,25 +11,13 @@
   },
   "permissions": [
     "storage",
-    "webNavigation"
+    "webNavigation",
+    "alarms"
   ],
   "background": {
     "service_worker": "src/background/service-worker.js",
     "type": "module"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ],
-      "run_at": "document_idle",
-      "all_frames": false,
-      "js": [
-        "src/content/monitor.js"
-      ]
-    }
-  ],
   "options_ui": {
     "page": "src/options/options.html",
     "open_in_tab": true

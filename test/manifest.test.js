@@ -34,7 +34,8 @@ describe("manifest", () => {
     const referenced = [
       manifest.background.service_worker,
       manifest.options_ui.page,
-      ...manifest.content_scripts.flatMap((c) => c.js),
+      manifest.action.default_popup,
+      ...(manifest.content_scripts || []).flatMap((c) => c.js),
     ];
     for (const p of referenced) ok(existsSync(root(p)), `missing ${p}`);
   });
@@ -43,11 +44,25 @@ describe("manifest", () => {
     eq(manifest.background.type, "module");
   });
 
-  // Reviewers weigh every permission. Anything beyond these two needs a reason
+  // Reviewers weigh every permission. Anything beyond these three needs a reason
   // in STORE.md before it goes in.
   it("asks for no more permissions than it uses", () => {
-    eq(manifest.permissions.slice().sort(), ["storage", "webNavigation"]);
-    eq(manifest.host_permissions, undefined, "host_permissions would widen the review");
+    eq(manifest.permissions.slice().sort(), ["alarms", "storage", "webNavigation"]);
+  });
+
+  // The store flags an extension that can reach any site and puts it through a
+  // slower review. Nothing here needs to: webNavigation reports URLs on its own
+  // permission, and tabs.update redirects without one. Both ways of asking for
+  // site access are checked, because the dashboard treats a content script's
+  // match pattern as a host permission just as much as the manifest key does.
+  it("asks for access to no site at all", () => {
+    eq(manifest.host_permissions, undefined, "host_permissions widens the review");
+    eq(manifest.optional_host_permissions, undefined, "so does asking for them later");
+    eq(manifest.content_scripts, undefined, "a match pattern counts as a host permission");
+  });
+
+  it("does not ask to read tab URLs, titles or favicons", () => {
+    ok(!manifest.permissions.includes("tabs"), "tabs is not needed to redirect a tab");
   });
 });
 

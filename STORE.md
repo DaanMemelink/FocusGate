@@ -17,7 +17,7 @@ the extension needs to run: no tests, no tooling, no bundled clips.
 - [ ] `manifest.json` version bumped — the store rejects a re-upload of an
       existing version number.
 - [ ] The ZIP contains **no `.mp4`**. `tools/package.mjs` enforces this; see
-      *Bundled clips* below for why it matters.
+      *Clips* below for why it matters.
 - [ ] Screenshots captured (see below) — at least one is required.
 
 ## Listing
@@ -138,8 +138,8 @@ change the URL after publishing, so the domain does not have to exist first.
 
 ## Permission justifications
 
-One field each, and the host-permission answer is the one that decides how long
-review takes. Say the least that is true.
+One field each. There is no host-permission field to fill in, because the
+extension asks for access to no site — see below.
 
 **`storage`**
 
@@ -150,7 +150,7 @@ In chrome.storage.sync: the rules the user created (which sites and paths to gat
 
 In chrome.storage.local: an unlock expiry per rule, so a site the user has cleared stays open for the length they chose; a per-day count of gates cleared and minutes granted per rule, which drives the tally on the gate's final step and the escalating wait; and the last reason the user typed for each rule, which step three quotes back to them.
 
-Nothing is transmitted anywhere. The extension makes no network requests at runtime.
+chrome.storage.session holds one transient entry per tab: the URL a pending re-check applies to. Nothing is transmitted anywhere. The extension makes no network requests at runtime.
 ```
 
 **`webNavigation`**
@@ -163,25 +163,45 @@ The service worker listens to webNavigation.onBeforeNavigate to inspect a destin
 The URL is compared in memory against the user's own rules. If nothing matches it is discarded immediately. If a rule matches and no unlock is active, the tab is redirected to the extension's own gate page. No other webNavigation event is used, no URL is written to storage, and nothing leaves the device.
 ```
 
-**Host permissions** — the dashboard asks for this because `content_scripts`
-declares a match pattern, even though the manifest has no `host_permissions`
-key. A pattern this broad triggers a slower, more thorough review.
+**`alarms`**
 
 ```
-The extension declares one content script matching http://*/* and https://*/*. It is deliberately minimal: it holds no rules and no logic, reads nothing from the page, and never touches the DOM or page content.
+alarms sets one timer, for one thing: the moment an unlock expires.
 
-Every five seconds, and when a tab becomes visible again, it passes the current page URL to this extension's own service worker and asks whether that page should now be gated again. The worker answers using the user's own rules.
+When the user clears the gate for a site they get an unlock of a length they chose. Navigation events cover every case where they then move somewhere else. They do not cover the case this extension exists for, which is someone who opens the site, clears the gate, and scrolls without navigating at all. Their unlock would lapse in silence and the page would stay open.
 
-This covers the one case the navigation listeners cannot: an unlock expiring while the user sits on a page without navigating at all. Someone who opens a gated site and stays there for an hour would otherwise never be re-gated once their unlock ran out.
+So when the worker lets a navigation through because an unlock is live, it creates a single alarm for the moment that unlock runs out, holding the tab's URL in chrome.storage.session. If the tab is still on a gated URL when the alarm fires, it is sent to the gate. Every navigation clears the pending alarm first, so one can never fire against a page the user has already left, and closing a tab clears its alarm.
 
-The pattern has to be broad because the user decides which sites are gated, and that can be any site. The URL goes only to this extension, is matched in memory, and is never stored or transmitted.
+This replaced a content script that polled every five seconds, which is why the extension no longer asks for access to any website.
 ```
 
-If that delay ever becomes the thing standing between you and shipping, the
-content script is the only reason the pattern is broad, and it exists for one
-narrow case: an unlock expiring while the user sits still on a page. Dropping it
-would cost that case and nothing else. It is a real feature, so it is worth
-keeping — but it is a choice, not a requirement.
+## Host permissions: none
+
+The dashboard warns about broad host permissions when a manifest can reach an
+unbounded set of sites, and it counts a content script's match pattern just as
+much as the `host_permissions` key. Focus Gate has neither, so the warning does
+not apply and the listing avoids the slower review that comes with it.
+
+It did have one. A content script on `http://*/*` and `https://*/*` polled the
+worker every five seconds to catch an unlock expiring while the user sat still
+on a page. It was honest and it was minimal — no rules, no logic, no DOM access
+— but it meant asking to reach every site a user visits in order to watch the
+handful they chose, and it was the only thing in the extension that did.
+
+Removing it cost no functionality, because none of the gating needs site access:
+
+- `chrome.webNavigation` reports every navigation **and its URL** on the strength
+  of its own permission. It does not take host permissions.
+- `chrome.tabs.update({ url })` redirects a tab without any permission at all.
+  The `tabs` permission gates *reading* a tab's `url`, `title` and `favIconUrl`
+  via `tabs.query()`, which this extension never does and so never asks for.
+
+The re-check moved into the worker as a `chrome.alarms` alarm set for the exact
+expiry moment: same behaviour, better timing, no access to anything.
+
+`test/manifest.test.js` asserts all of it — no `host_permissions`, no
+`optional_host_permissions`, no `content_scripts`, no `tabs` — so it fails
+rather than quietly widening the review if one creeps back in.
 
 ## Screenshots
 

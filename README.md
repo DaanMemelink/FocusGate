@@ -36,8 +36,6 @@ src/
     storage.js            The only file that touches chrome.storage
   background/
     service-worker.js     Navigation interception; the only place gating is decided
-  content/
-    monitor.js            Dumb poller — holds no logic, just asks the worker
   gate/                   The interstitial (gate.html/.css/.js)
   options/                The settings page
   popup/                  Toolbar popup: is the gate awake, and today's tally
@@ -148,10 +146,29 @@ Two listeners in the service worker, and both are needed:
   fires *after* the URL changes, so a Short can flash up for an instant before
   the gate replaces it. There is no earlier hook; late beats never.
 
-The content script holds no rules, settings or pass logic and never navigates.
-It polls the worker for the one case navigation events can't cover — a pass
-expiring while you sit on a page without moving. One source of truth, and a
-content script killed by an extension reload can't take the rules down with it.
+Neither covers the user who does not move at all: open Instagram, clear the
+gate, scroll for an hour, and nothing fires again — the pass expires in silence.
+So when the worker lets a navigation through because a pass is live, it sets a
+`chrome.alarms` alarm for the moment that pass runs out, remembering the tab's
+URL in `chrome.storage.session`. If the tab is still there when the alarm fires,
+it gets gated. Every navigation clears the pending check first, so an alarm can
+never fire against a page the user has already left.
+
+This was a content script polling every five seconds until it became clear what
+that cost: watching the handful of sites you chose meant asking for access to
+every site you visit. The alarm does the same job from inside the worker, needs
+no access to any site, and fires on time instead of up to five seconds late.
+
+### Permissions
+
+`storage`, `webNavigation`, `alarms` — and **no host permissions, no content
+scripts**. That is not an accident and it is worth not regressing: the store
+puts anything that can reach an unbounded set of sites through a slower review,
+and both the `host_permissions` key and a content script's match pattern count.
+`webNavigation` reports URLs on the strength of its own permission, and
+`tabs.update` redirects a tab without one — the `tabs` permission only gates
+*reading* a tab's url, title and favicon, which nothing here does.
+`test/manifest.test.js` fails if any of that creeps back.
 
 ### Passes
 

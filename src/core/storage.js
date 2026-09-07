@@ -50,9 +50,17 @@ export async function getPasses() {
 }
 
 export async function hasPass(key, now = Date.now()) {
-  if (!key) return false;
+  return (await passExpiry(key, now)) !== null;
+}
+
+// The moment an active pass runs out, or null if there is no live one. The
+// worker schedules its re-check against this, so it needs the time and not just
+// the yes/no that hasPass gives.
+export async function passExpiry(key, now = Date.now()) {
+  if (!key) return null;
   const passes = await getPasses();
-  return typeof passes[key] === "number" && passes[key] > now;
+  const expiry = passes[key];
+  return typeof expiry === "number" && expiry > now ? expiry : null;
 }
 
 export async function grantPass(key, minutes, now = Date.now()) {
