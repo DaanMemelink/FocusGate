@@ -1,0 +1,568 @@
+/* The settings page. Single 820px column, hairline sections, square corners. */
+
+.bar { border-bottom: 1px solid var(--rule); }
+.bar-inner {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 18px 28px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.bar-inner { align-items: center; }
+/* The lockup's own gap is the mark-to-wordmark clear space LOGO.md specifies;
+   the page qualifier needs more air than that to read as a separate word. */
+.bar-inner .lockup .muted { margin-left: 5px; }
+.muted { color: var(--muted); }
+
+.page {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 44px 28px 140px;
+}
+
+.title {
+  font-size: 46px;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 0;
+  font-weight: 400;
+}
+.standfirst {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 56ch;
+}
+
+.gate-status {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule-2);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.gate-status .dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  align-self: center;
+  background: var(--chip-border);
+}
+.gate-status .dot.awake { background: var(--accent); }
+.status-state { text-transform: uppercase; letter-spacing: 0.14em; font-size: 10px; }
+.status-detail { color: var(--muted); }
+
+/* --- Section headers ------------------------------------------------------ */
+
+.section-head {
+  margin-top: 58px;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 12px;
+}
+.section-head.with-action {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.section-title {
+  font-size: 27px;
+  line-height: 1.15;
+  margin: 6px 0 0;
+  font-weight: 400;
+}
+
+.note {
+  margin: 14px 0 0;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 60ch;
+}
+.note.tight { margin-top: 10px; }
+.note code {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+/* --- Buttons -------------------------------------------------------------- */
+
+.outline,
+.solid {
+  flex: none;
+  padding: 10px 16px;
+  border: 1px solid var(--ink);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.outline { background: transparent; }
+.solid { background: var(--ink); color: var(--on-ink); }
+
+.quiet {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.quiet.underline {
+  text-transform: none;
+  letter-spacing: 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* --- Rules ---------------------------------------------------------------- */
+
+/* Rules that compete for the same URLs are tied together visually, because the
+   01/02/03 badges are meaningless without knowing what they are ordered
+   against. A group of one gets no chrome at all. */
+.rule-group.competing {
+  margin: 10px 0 18px;
+  border-left: 2px solid var(--ink);
+  padding-left: 14px;
+}
+.rule-group.competing .rule:last-child { border-bottom: none; }
+
+.group-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0 4px;
+}
+.group-domain {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+.group-note {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.rule { border-bottom: 1px solid var(--rule); }
+
+.rule-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 0;
+}
+.rule-order {
+  flex: none;
+  width: 22px;
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.rule-label {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+.rule-caret {
+  flex: none;
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chip {
+  flex: none;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border: 1px solid var(--chip-border);
+  background: transparent;
+  color: var(--muted);
+}
+.chip.level-Light { border-color: var(--ink); color: var(--ink); }
+.chip.level-Standard { border-color: var(--ink); background: var(--ink); color: var(--on-ink); }
+.chip.level-Maximum { border-color: var(--accent); background: var(--accent); color: var(--on-ink); }
+
+.rule-panel {
+  background: var(--panel);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.level-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.level-btn {
+  padding: 9px 14px;
+  border: 1px solid var(--chip-border);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.level-btn[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.level-hint {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 12px 0 0;
+  max-width: 56ch;
+}
+
+.overrides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+}
+.floor-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+.panel-foot {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.link-quiet,
+.link-danger {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.link-quiet { color: var(--muted); }
+.link-danger { color: var(--accent); }
+
+.draft-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.draft {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+/* --- Fields --------------------------------------------------------------- */
+
+.underlined {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-top: 22px;
+}
+.field { flex: 1 1 150px; }
+.field-input {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 6px;
+}
+.num {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  font-size: 20px;
+  background: transparent;
+  border: none;
+  font-variant-numeric: tabular-nums;
+}
+.unit { font-size: 11px; color: var(--muted); }
+
+.time {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 0 0 6px;
+  font-size: 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Toggles -------------------------------------------------------------- */
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.toggle-label { font-size: 13px; }
+.toggle-hint {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.toggle {
+  flex: none;
+  position: relative;
+  width: 46px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+.toggle .knob {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 18px;
+  left: 2px;
+  background: var(--chip-border);
+}
+.toggle[aria-checked="true"] .knob {
+  left: calc(100% - 20px);
+  background: var(--ink);
+}
+/* The last enabled step can't be switched off — the gate would stop being one. */
+.toggle[aria-disabled="true"] { cursor: not-allowed; }
+
+/* --- Presets -------------------------------------------------------------- */
+
+.preset-head {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.preset-name { flex: 1 1 auto; }
+.preset-cell { flex: 0 0 92px; text-align: right; }
+.preset-steps-head { flex: 0 0 132px; }
+
+/* Which of the four steps a level runs. */
+.step-chips {
+  flex: 0 0 132px;
+  display: flex;
+  gap: 5px;
+}
+.step-chip {
+  width: 28px;
+  padding: 6px 0;
+  border: 1px solid var(--chip-border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.step-chip[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.step-chip:disabled {
+  border-style: dashed;
+  color: var(--faint);
+  cursor: not-allowed;
+}
+.step-chip[aria-disabled="true"] { cursor: not-allowed; }
+
+@media (max-width: 620px) {
+  .preset-steps-head { display: none; }
+  .preset-row { flex-wrap: wrap; }
+  .step-chips { order: 3; flex-basis: 100%; }
+}
+
+.preset-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.preset-row .preset-name { font-size: 13px; min-width: 0; }
+.preset-field {
+  flex: 0 0 92px;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+  border-bottom: 1px solid var(--rule-2);
+  padding-bottom: 4px;
+}
+.preset-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  font-size: 15px;
+  text-align: right;
+  background: transparent;
+  border: none;
+  font-variant-numeric: tabular-nums;
+}
+.preset-field .unit { font-size: 10px; }
+
+/* --- Days ----------------------------------------------------------------- */
+
+.days-block { padding: 22px 0 4px; }
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.day {
+  width: 38px;
+  padding: 9px 0;
+  border: 1px solid var(--chip-border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.day[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+/* --- Waiting room --------------------------------------------------------- */
+
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+#clip-block { padding: 20px 0 6px; }
+.range {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  accent-color: var(--accent);
+}
+.clip-slot {
+  margin-top: 22px;
+  aspect-ratio: 16 / 5;
+  border: 1px solid var(--rule-2);
+  background: repeating-linear-gradient(135deg, var(--panel) 0 7px, var(--bg) 7px 14px);
+  display: flex;
+  align-items: flex-end;
+  padding: 14px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.quotes-block { padding: 24px 0 0; }
+.quotes {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 16px;
+  font-size: 12px;
+  line-height: 1.8;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  resize: vertical;
+}
+
+.footer-row {
+  margin-top: 58px;
+  border-top: 1px solid var(--rule);
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.footer-row .note { max-width: 46ch; margin: 0; }
+
+/* --- Save bar ------------------------------------------------------------- */
+
+.savebar {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--ink);
+}
+.savebar-inner {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.savebar-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.savebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.savebar .solid { padding: 13px 24px; font-size: 10px; letter-spacing: 0.16em; }

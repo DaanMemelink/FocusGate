@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Focus Gate — Settings</title>
+    <link rel="icon" href="../assets/icons/icon-32.png" />
+    <link rel="stylesheet" href="../ui/tokens.css" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="bar-inner">
+        <span class="lockup">
+          <svg class="mark" viewBox="0 0 32 32" width="16" height="16" fill="currentColor" aria-hidden="true">
+            <rect x="4" y="2" width="4.5" height="28"></rect>
+            <rect x="23.5" y="2" width="4.5" height="28"></rect>
+            <rect x="8.5" y="9" width="15" height="4" fill="var(--accent)"></rect>
+            <rect x="8.5" y="19" width="15" height="4"></rect>
+          </svg>
+          <span>Focus&nbsp;Gate</span>
+          <span class="muted">Settings</span>
+        </span>
+      </div>
+    </header>
+
+    <main class="page">
+      <h1 class="serif title">What gets gated, and how hard.</h1>
+      <p class="standfirst">
+        Everything below is friction you are choosing on purpose, while you still
+        have the judgement to choose it.
+      </p>
+
+      <!-- Outside its focus hours the gate does nothing, which looks identical
+           to a broken install unless it says so. -->
+      <div class="gate-status" id="gate-status">
+        <span class="dot" id="status-dot"></span>
+        <span class="status-state" id="status-state"></span>
+        <span class="status-detail" id="status-detail"></span>
+      </div>
+
+      <!-- 01 — Rules -->
+      <div class="section-head with-action">
+        <div>
+          <div class="kicker">01 — Rules</div>
+          <h2 class="serif section-title">The list</h2>
+        </div>
+        <button class="outline" id="add-rule" type="button">+ Add rule</button>
+      </div>
+
+      <div id="rules"></div>
+
+      <div class="draft-row" id="draft-row" hidden>
+        <input
+          class="underlined draft" id="draft" type="text"
+          placeholder="host.com/optional/path" autocomplete="off" spellcheck="false"
+          aria-label="New rule"
+        />
+        <button class="solid" id="draft-add" type="button">Add</button>
+        <button class="quiet" id="draft-cancel" type="button">Cancel</button>
+      </div>
+
+      <p class="note">
+        The number in front is <strong>match order</strong>, not priority you set.
+        Rules covering the same domain are numbered <code>01</code>, <code>02</code>…
+        in the order they get checked — most specific first: longest host, then
+        longest path. A <code>·</code> means nothing else could ever match the
+        same address, so that rule competes with no one. Either way the order of
+        this list does not matter. A pass earned on one rule does not unlock
+        another.
+      </p>
+
+      <!-- 02 — Gate steps -->
+      <div class="section-head">
+        <div class="kicker">02 — Gate steps</div>
+        <h2 class="serif section-title">How much friction</h2>
+      </div>
+      <div id="steps"></div>
+
+      <div class="field-row">
+        <div class="field">
+          <div class="kicker">Hold to open</div>
+          <div class="field-input">
+            <input class="num" id="hold-seconds" inputmode="numeric" aria-label="Hold to open, seconds" />
+            <span class="unit">sec</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="kicker">Intent minimum</div>
+          <div class="field-input">
+            <input class="num" id="intent-min" inputmode="numeric" aria-label="Intent minimum, characters" />
+            <span class="unit">chars</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03 — Level presets -->
+      <div class="section-head">
+        <div class="kicker">03 — Level presets</div>
+        <h2 class="serif section-title">What each level costs</h2>
+      </div>
+      <div class="preset-head">
+        <span class="preset-name">Level</span>
+        <span class="preset-steps-head">Steps</span>
+        <span class="preset-cell">Wait</span>
+        <span class="preset-cell">Pass</span>
+      </div>
+      <div id="presets"></div>
+      <p class="note">
+        A pass is never shorter than five minutes, however many times you have
+        caved today. Video sites get double — a clip takes longer than a glance.
+      </p>
+
+      <!-- 04 — Focus hours -->
+      <div class="section-head">
+        <div class="kicker">04 — Focus hours</div>
+        <h2 class="serif section-title">When the gate is awake</h2>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Always on</div>
+          <div class="toggle-hint">Gate every hour of every day.</div>
+        </div>
+        <button class="toggle" id="always" type="button" role="switch" aria-checked="false">
+          <span class="knob"></span>
+        </button>
+      </div>
+      <div id="schedule" hidden>
+        <div class="days-block">
+          <div class="kicker">Days</div>
+          <div class="days" id="days"></div>
+          <div class="field-row">
+            <div class="field">
+              <div class="kicker">From</div>
+              <input class="time" id="from" type="time" aria-label="Focus hours start" />
+            </div>
+            <div class="field">
+              <div class="kicker">Until</div>
+              <input class="time" id="until" type="time" aria-label="Focus hours end" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 05 — The waiting room -->
+      <div class="section-head">
+        <div class="kicker">05 — The waiting room</div>
+        <h2 class="serif section-title">What you stare at</h2>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Play a clip instead, sometimes</div>
+          <div class="toggle-hint" id="clip-hint"></div>
+        </div>
+        <button class="toggle" id="clips" type="button" role="switch" aria-checked="false">
+          <span class="knob"></span>
+        </button>
+      </div>
+      <div id="clip-block" hidden>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Play clips with sound</div>
+            <div class="toggle-hint" id="clip-sound-hint"></div>
+          </div>
+          <button class="toggle" id="clip-sound" type="button" role="switch" aria-checked="false">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="meter-head">
+          <span class="kicker">Clip frequency</span>
+          <span class="kicker tnum" id="clip-pct"></span>
+        </div>
+        <input class="range" id="clip-rate" type="range" min="0" max="100" step="5" aria-label="Clip frequency" />
+        <div class="clip-slot" id="clip-slot"></div>
+      </div>
+
+      <div class="quotes-block">
+        <div class="meter-head">
+          <span class="kicker">Quotes — one per line</span>
+          <span class="kicker tnum" id="quote-count"></span>
+        </div>
+        <textarea
+          class="quotes" id="quotes" rows="6"
+          placeholder="Something you will hate reading at the wrong moment."
+          aria-label="Quotes, one per line"
+        ></textarea>
+        <p class="note tight">
+          Add <code>— Name</code> at the end of a line to credit it.
+        </p>
+      </div>
+
+      <div class="footer-row">
+        <p class="note tight">
+          Loosening a rule takes effect tomorrow. Tightening one takes effect now.
+        </p>
+        <button class="quiet underline" id="reset-all" type="button">Reset everything to defaults</button>
+      </div>
+    </main>
+
+    <div class="savebar" id="savebar" hidden>
+      <div class="savebar-inner">
+        <span class="savebar-label">Unsaved changes</span>
+        <div class="savebar-actions">
+          <button class="quiet" id="discard" type="button">Discard</button>
+          <button class="solid" id="save" type="button">Save changes</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

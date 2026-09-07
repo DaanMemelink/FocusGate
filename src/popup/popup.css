@@ -1,0 +1,65 @@
+/* Toolbar popup. The full designed popup (pause gating, quick-add the current
+   site) is still a roadmap item; this is the status readout, which is what you
+   actually want when the gate seems not to be doing anything. */
+
+.popup {
+  width: 268px;
+  padding: 16px 18px 18px;
+}
+
+.popup .lockup { color: var(--muted); margin-bottom: 2px; }
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 14px;
+  font-size: 15px;
+}
+
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--chip-border);
+}
+.dot.awake { background: var(--accent); }
+
+.detail {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.mini-tally {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  gap: 18px;
+}
+.mini-tally div { flex: 1; }
+.mini-tally dt {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mini-tally dd {
+  margin: 4px 0 0;
+  font-size: 18px;
+}
+
+.solid {
+  width: 100%;
+  margin-top: 18px;
+  padding: 11px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}

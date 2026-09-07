@@ -1,0 +1,10 @@
+{
+  "name": "focus-gate",
+  "private": true,
+  "type": "module",
+  "description": "Present only so Node treats src/core/*.js as ES modules when running the tests. No dependencies, no build step.",
+  "scripts": {
+    "test": "node test/run.js",
+    "package": "node tools/package.mjs"
+  }
+}

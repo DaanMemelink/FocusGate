@@ -1,0 +1,366 @@
+/* The gate page. Geometry from the design handoff: 1px borders, square corners
+   everywhere except the countdown ring, and no motion beyond the ring, the rail
+   fill, the hold fill and the quote rotation — anything more makes the gate
+   feel like a game. */
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Header bar ----------------------------------------------------------- */
+
+.bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 28px 14px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* The header row baselines its two halves; the lockup centres its own mark. */
+.bar { align-items: center; }
+
+.bar-right {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.level-chip {
+  border: 1px solid var(--rule-2);
+  padding: 3px 8px;
+  letter-spacing: 0.14em;
+}
+
+/* --- Column --------------------------------------------------------------- */
+
+.column {
+  flex: 1;
+  width: 100%;
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 34px 28px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Step rail ------------------------------------------------------------ */
+
+.rail-track {
+  height: 1px;
+  background: var(--rule);
+  position: relative;
+}
+.rail-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 1px;
+  background: var(--ink);
+  width: 0;
+}
+
+.rail-labels {
+  display: flex;
+  gap: 12px;
+  margin: 9px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.rail-labels li {
+  flex: 1;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rail-next);
+}
+.rail-labels li.done { color: var(--muted); }
+.rail-labels li.current { color: var(--ink); }
+
+/* --- Content well --------------------------------------------------------- */
+
+.well {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 30px 0;
+}
+
+/* --- 01 Wait -------------------------------------------------------------- */
+
+.countdown {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.countdown svg { flex: none; display: block; }
+
+.clock {
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.clock-note {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 9px;
+}
+
+.quote {
+  margin: 40px 0 0;
+  border-top: 1px solid var(--rule);
+  padding-top: 26px;
+}
+.quote-text {
+  margin: 0;
+  font-size: 38px;
+  line-height: 1.14;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+.quote-by {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 16px;
+}
+
+.clip {
+  position: relative;
+  margin-top: 34px;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--rule-2);
+  background: repeating-linear-gradient(135deg, var(--stripe) 0 7px, var(--bg) 7px 14px);
+  overflow: hidden;
+}
+/* Portrait clips are the common case (Shorts-shaped), and letting one fill a
+   16:9 box would crop it to a band through the middle. The class is set from
+   the file's own metadata once it loads. */
+.clip.portrait {
+  aspect-ratio: 9 / 16;
+  width: min(100%, calc(38vh * 9 / 16));
+}
+.clip-media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Shown only when the browser refused to autoplay with sound. Same chip
+   language as the esc keycap, sitting over the clip's bottom-left corner. */
+.unmute {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--on-ink);
+  background: color-mix(in oklab, var(--ink) 72%, transparent);
+  color: var(--on-ink);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.unmute:hover { background: var(--ink); }
+
+.restarted {
+  margin: 26px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+/* --- 02 Task / 03 Intent -------------------------------------------------- */
+
+.prompt {
+  font-size: 34px;
+  line-height: 1.2;
+  margin: 16px 0 0;
+  text-wrap: pretty;
+}
+
+.underlined {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+}
+.answer {
+  margin-top: 34px;
+  padding: 10px 0;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+.intent {
+  margin-top: 26px;
+  padding: 12px 0;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+/* Fixed height so a wrong answer doesn't shift the layout under the cursor. */
+.error {
+  height: 18px;
+  margin-top: 12px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+.standing-note,
+.meter {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.standing-note { margin: 0; }
+
+.meter {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.last-excuse {
+  margin-top: 30px;
+  border-top: 1px solid var(--rule);
+  padding-top: 18px;
+}
+.excuse-text {
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.3;
+  margin: 8px 0 0;
+  color: var(--ink-2);
+}
+
+/* --- 04 Commit ------------------------------------------------------------ */
+
+.tally {
+  margin: 20px 0 0;
+  border-top: 1px solid var(--rule);
+}
+.tally-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+}
+.tally-row dt { color: var(--muted); }
+.tally-row dd { margin: 0; }
+
+.hold {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  width: 100%;
+  margin-top: 30px;
+  padding: 20px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+.hold-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: var(--accent-soft);
+}
+.hold-label {
+  position: relative;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.fine-print {
+  margin: 14px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* --- Terminal states ------------------------------------------------------ */
+
+.terminal {
+  font-size: 52px;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 0;
+  font-weight: 400;
+}
+.terminal-note {
+  margin: 18px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* --- Footer --------------------------------------------------------------- */
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid var(--rule);
+  padding-top: 20px;
+}
+
+.primary {
+  padding: 14px 26px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.primary:disabled {
+  border-color: var(--rule-3);
+  background: transparent;
+  color: var(--faint);
+  cursor: not-allowed;
+}
+
+.bail-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.keycap {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--chip-border);
+  padding: 3px 6px;
+}
+.bail {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}

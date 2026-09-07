@@ -1,0 +1,29 @@
+# Design handoff bundle — reference material, not part of the extension.
+design_handoff_focus_gate/
+
+# Bundled clips. Media you did not create should not be redistributed, so the
+# repo ships none — drop your own .mp4 files here and list them in
+# config/defaults.json under clipFiles. tools/package.mjs excludes them anyway.
+src/assets/clips/*
+!src/assets/clips/.gitkeep
+
+# Packaging output
+dist/
+build/
+*.zip
+*.crx
+*.pem
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs and local env
+*.log
+.env
+.env.*
