@@ -132,20 +132,22 @@ To capture them, load the extension unpacked, open each page, and screenshot at
 `chrome-extension://<id>/src/gate/gate.html?target=https://example.com` — with a
 rule for `example.com` in place, or the page passes straight through.
 
-## Bundled clips
+## Clips
 
 The waiting screen can play a short video instead of a quote. **The repository
 ships none, and `tools/package.mjs` strips any it finds**, because a video you
 did not create cannot be redistributed in a store listing — which includes the
 sample this project was developed against.
 
-Locally, drop `.mp4` files into `src/assets/clips/` and list them in
-`config/defaults.json` under `clipFiles`. That directory is gitignored. With no
-clips the gate shows quotes, which is the intended fallback, not a failure.
+Published users add their own, in Settings › Waiting room. Files go into
+IndexedDB under the extension's own origin, so they never leave the machine and
+never reach a server — worth stating plainly in the store listing's data
+disclosures, where the honest answer stays "collects nothing".
 
-If you want clips for published users, they need to supply their own — that
-means storing a user-provided file in `chrome.storage.local` or IndexedDB rather
-than bundling one. Not built yet.
+Locally you can also bundle clips: drop `.mp4` files into `src/assets/clips/` and
+list them in `config/local.json` under `clipFiles`. Both are gitignored, and the
+packager ships `config/local.json` as `{}`. With no clips at all the gate shows
+quotes, which is the intended fallback, not a failure.
 
 ## Third-party licences
 

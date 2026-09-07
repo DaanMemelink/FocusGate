@@ -21,7 +21,6 @@ const INCLUDE_FILES = ["manifest.json"];
 // Matched against the archive-relative path.
 const EXCLUDE = [
   /^src\/assets\/clips\//, // third-party media — see the note above
-  /^config\/local\.json$/, // a developer's own overrides, never shipped
   // Only the four manifest icons are loaded at runtime; the lockup is inlined
   // SVG. The rest of src/assets/icons is source and press art.
   /^src\/assets\/icons\/(mark|icon-128-inverse)/,
@@ -52,9 +51,18 @@ for (const dir of INCLUDE_DIRS) {
   }
 }
 
+// config/local.json holds a developer's own overrides and must never ship.
+// But every page fetches it, and a missing bundled resource logs an error in
+// the user's console on each load. Shipping an empty one keeps the override
+// mechanism intact and the console clean.
+const localEntry = files.find((f) => f.name === "config/local.json");
+const emptyOverride = Buffer.from("{}", "utf8");
+if (localEntry) localEntry.data = emptyOverride;
+else files.push({ name: "config/local.json", data: emptyOverride });
+
 // The shipped config must not point at clips that are not in the archive.
-// Rewriting it here keeps the working copy usable with your own clips while the
-// upload stays clean.
+// Rewriting it here keeps the working copy usable with your own clips while
+// the upload stays clean.
 const configEntry = files.find((f) => f.name === "config/defaults.json");
 const config = JSON.parse(configEntry.data.toString("utf8"));
 const droppedClips = (config.clipFiles || []).length;

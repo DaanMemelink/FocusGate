@@ -86,7 +86,9 @@ do it means carrying a change you must never commit. Put it here instead:
 ```
 
 The merge is shallow, so an override replaces a whole top-level key rather than
-being merged into it. It is never included in the store package.
+being merged into it. The packager ships it as `{}` rather than dropping it: the
+pages fetch it either way, and a bundled resource that 404s puts an error in
+every user's console on every page load.
 
 It is read with `fetch(chrome.runtime.getURL(...))` rather than imported as a
 JSON module. Import attributes work in extension pages and in Node, but an MV3
@@ -171,7 +173,8 @@ Four steps, each a chance to give up; steps switched off in settings are
 skipped, and the options page refuses to let you turn off the last one.
 
 1. **Wait** — a countdown ring you have to watch. Looking away restarts it.
-   A quote rotates every 11s, or a bundled clip plays instead. Clips try to
+   A quote rotates every 11s, or a clip plays instead — bundled, or one you
+   added in Settings, drawn from the same pool. Clips try to
    play **with sound**; browsers block autoplay-with-sound unless the page has
    user activation, and nobody clicks their way to a gate — so on refusal it
    falls back to muted and shows an unmute button, which is the gesture the
@@ -191,6 +194,32 @@ steps exist at all; each level can narrow that further from the Steps column in
 section 03. Light ships running only **1 Wait** and **4 Commit** — a site you
 have marked as one you genuinely need shouldn't also demand a puzzle. A level
 can never be left with zero steps.
+
+### Your own clips
+
+Settings › Waiting room takes MP4 or WebM up to 40 MB and stores them in
+**IndexedDB**, keyed by the extension's own origin, so a clip added in Settings
+is immediately visible to the gate. Nothing leaves the machine.
+
+IndexedDB rather than `chrome.storage.local` because the latter stores only
+JSON: a video would have to be base64'd, a third larger and decoded on every
+read. IndexedDB takes a `Blob` and hands one straight back to a `<video>` via an
+object URL. Metadata and bytes live in separate object stores, so listing clips
+in Settings does not read every video into memory to show its name.
+
+**Shrink on upload** is optional and re-encodes to WebM at up to 720p. There is
+no dependency-free way to transcode in a browser except to play the file and
+record the output, so it runs in **real time**: a 40-second clip takes 40
+seconds. ffmpeg.wasm would be faster and is ~30 MB of dependency this project
+does not have and should not acquire for a convenience.
+
+Two things make that safe to offer. The result is kept only if it is actually
+smaller, since re-encoding an already-efficient file usually is not. And frames
+drawn are counted against frames due: a tab that goes out of view stops
+receiving frame callbacks, so the canvas feeds the recorder one still image for
+the length of the clip — an encode that "succeeds" and comes out *smaller* than
+the original, which a size check alone would wave through. Below half the frames
+due, the original is kept and the user is told why.
 
 ## Design
 
@@ -243,8 +272,9 @@ Two things to know before submitting:
 
 - **No clips ship.** Video you did not create cannot be redistributed in a store
   listing, so `src/assets/clips/` is gitignored and the packager strips it. With
-  no clips the gate shows quotes, which is the designed fallback. Drop your own
-  files in that folder and list them under `clipFiles` for local use.
+  no clips the gate shows quotes, which is the designed fallback. Published users
+  add their own in Settings; locally you can also drop files in that folder and
+  list them under `clipFiles` in `config/local.json`.
 - **A privacy policy URL is required** to publish, even though the extension
   collects nothing and makes no network requests at runtime. `PRIVACY.md` is
   written to serve as that page once the repo is public.
@@ -260,5 +290,4 @@ Ranked, from the handoff:
 - [ ] **Rule tester** in settings: paste a URL, see which rule matches.
 - [ ] "Loosening a rule takes effect tomorrow, tightening takes effect now" —
       the copy is in the settings footer, the asymmetry is not implemented.
-- [ ] User-supplied clips, stored in the browser rather than bundled — the only
-      way published users can have video on the waiting screen.
+

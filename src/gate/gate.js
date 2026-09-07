@@ -11,6 +11,7 @@
 import { matchRule, ruleKey, isAllowed } from "../core/rules.js";
 import { waitSeconds, passMinutes, stepsFor, STEP_KEYS } from "../core/levels.js";
 import { parseQuotes, getBundledClips } from "../core/defaults.js";
+import { listClips, getClipBlob } from "../core/clips.js";
 import { makePuzzle, isCorrect } from "../core/puzzles.js";
 import {
   loadSettings,
@@ -42,7 +43,8 @@ let left = 0;
 let passLength = 0;
 let puzzle = null;
 let intentText = "";
-let clips = [];
+let clips = []; // playable sources: bundled paths and stored clip ids
+let clipObjectUrl = null; // released on teardown, or the blob stays in memory
 let timers = [];
 
 // --- Small helpers ----------------------------------------------------------
@@ -72,6 +74,11 @@ function stopWaitMedia() {
     // nobody is looking at.
     media.removeAttribute("src");
     media.load();
+  }
+  // A blob URL pins the whole video in memory until it is revoked.
+  if (clipObjectUrl) {
+    URL.revokeObjectURL(clipObjectUrl);
+    clipObjectUrl = null;
   }
   $("clip").hidden = true;
   $("unmute").hidden = true;
@@ -175,30 +182,7 @@ function renderWait() {
   const useClip = settings.clips && Math.random() * 100 < settings.clipRate && clips.length;
 
   if (useClip) {
-    const clip = $("clip");
-    const media = $("clip-media");
-    const unmute = $("unmute");
-    media.src = chrome.runtime.getURL(clips[Math.floor(Math.random() * clips.length)]);
-    media.loop = true;
-    // Shape isn't knowable from the path; the file's own metadata settles it.
-    media.addEventListener("loadedmetadata", () => {
-      clip.classList.toggle("portrait", media.videoHeight > media.videoWidth);
-    });
-    // A missing file should leave no trace, not a black box.
-    media.addEventListener("error", () => {
-      clip.hidden = true;
-      unmute.hidden = true;
-      if (quotes.length) startQuotes(quotes);
-    });
-
-    unmute.addEventListener("click", () => {
-      media.muted = false;
-      unmute.hidden = true;
-      media.play().catch(() => {});
-    });
-
-    clip.hidden = false;
-    startClip(media, unmute, settings.clipSound !== false);
+    playClip(clips[Math.floor(Math.random() * clips.length)], quotes);
   } else if (quotes.length) {
     startQuotes(quotes);
   }
@@ -219,6 +203,54 @@ function renderWait() {
 
   if (settings.steps.restart) watchForTabSwitch();
   syncFooter();
+}
+
+// A clip is either bundled in the package or one the user added in Settings,
+// which lives in IndexedDB. Only the clip actually chosen is read out of the
+// store — there is no reason to pull every video into memory to play one.
+//
+// Anything that goes wrong falls back to a quote rather than leaving a black
+// box on screen: the clip is decoration, the countdown is the gate.
+async function playClip(chosen, quotes) {
+  const clip = $("clip");
+  const media = $("clip-media");
+  const unmute = $("unmute");
+
+  const fallBackToQuote = () => {
+    clip.hidden = true;
+    unmute.hidden = true;
+    if (quotes.length) startQuotes(quotes);
+  };
+
+  media.loop = true;
+  // Shape isn't knowable up front; the file's own metadata settles it.
+  media.addEventListener("loadedmetadata", () => {
+    clip.classList.toggle("portrait", media.videoHeight > media.videoWidth);
+  });
+  media.addEventListener("error", fallBackToQuote);
+  unmute.addEventListener("click", () => {
+    media.muted = false;
+    unmute.hidden = true;
+    media.play().catch(() => {});
+  });
+
+  try {
+    if (chosen.kind === "stored") {
+      const blob = await getClipBlob(chosen.id);
+      // The wait may have ended while the read was in flight.
+      if (leaving || steps[index] !== "wait") return;
+      if (!blob) return fallBackToQuote();
+      clipObjectUrl = URL.createObjectURL(blob);
+      media.src = clipObjectUrl;
+    } else {
+      media.src = chrome.runtime.getURL(chosen.path);
+    }
+  } catch {
+    return fallBackToQuote();
+  }
+
+  clip.hidden = false;
+  startClip(media, unmute, settings.clipSound !== false);
 }
 
 // Autoplay with sound is blocked unless the page has user activation, and the
@@ -417,6 +449,19 @@ async function clear() {
   }, 1200);
 }
 
+// Clips the user added, plus anything bundled in the package. Failing to open
+// the store is not worth blocking the gate over — the quote fallback is there.
+async function gatherClips() {
+  const bundled = (await getBundledClips()).map((path) => ({ kind: "bundled", path }));
+  let stored = [];
+  try {
+    stored = (await listClips()).map((c) => ({ kind: "stored", id: c.id }));
+  } catch (err) {
+    console.warn("[FocusGate] could not read stored clips", err);
+  }
+  return [...bundled, ...stored];
+}
+
 // --- Boot -------------------------------------------------------------------
 
 function renderStep() {
@@ -431,7 +476,7 @@ function renderStep() {
 
 async function start() {
   settings = await loadSettings();
-  clips = await getBundledClips();
+  clips = await gatherClips();
   rule = matchRule(target, settings.rules);
 
   // Nothing matched, or the rule was relaxed to Allowed while this page sat

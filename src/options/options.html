@@ -171,7 +171,36 @@
           <span class="kicker tnum" id="clip-pct"></span>
         </div>
         <input class="range" id="clip-rate" type="range" min="0" max="100" step="5" aria-label="Clip frequency" />
-        <div class="clip-slot" id="clip-slot"></div>
+
+        <div class="meter-head clips-head">
+          <span class="kicker">Your clips</span>
+          <span class="kicker tnum" id="clip-usage"></span>
+        </div>
+        <ul class="clip-list" id="clip-list"></ul>
+        <p class="clip-empty" id="clip-empty" hidden>
+          No clips yet. Add an MP4 or WebM and it plays instead of a quote.
+        </p>
+        <p class="clip-limit" id="clip-limit"></p>
+
+        <div class="clip-add">
+          <label class="outline file-button">
+            + Add clip
+            <input type="file" id="clip-file" accept="video/mp4,video/webm,video/ogg,video/quicktime" hidden />
+          </label>
+          <label class="check compress-check">
+            <input type="checkbox" id="clip-compress" />
+            <span>
+              Shrink on upload
+              <em id="compress-hint"></em>
+            </span>
+          </label>
+        </div>
+
+        <div class="clip-progress" id="clip-progress" hidden>
+          <div class="clip-progress-bar"><span id="clip-progress-fill"></span></div>
+          <span class="clip-progress-label" id="clip-progress-label"></span>
+        </div>
+        <p class="clip-error" id="clip-error"></p>
       </div>
 
       <div class="quotes-block">

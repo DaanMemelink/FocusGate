@@ -7,6 +7,24 @@ import { getDefaultSettings, cloneSettings, parseQuotes } from "../core/defaults
 import { LEVELS, LEVEL_HINT, presetFor, floorNote, stepsFor, STEP_KEYS } from "../core/levels.js";
 import { parsePattern, groupRules } from "../core/rules.js";
 import { loadSettings, saveSettings } from "../core/storage.js";
+import {
+  listClips,
+  addClip,
+  deleteClip,
+  validateClipFile,
+  probeVideo,
+  storageEstimate,
+  formatBytes,
+  formatDuration,
+  MAX_CLIP_BYTES,
+} from "../core/clips.js";
+import {
+  canCompress,
+  compressVideo,
+  isStarved,
+  keepSmaller,
+  TARGET_MAX_EDGE,
+} from "../core/compress.js";
 import { describeSchedule } from "../core/schedule.js";
 
 const $ = (id) => document.getElementById(id);
@@ -347,10 +365,156 @@ function renderHours() {
 
 // --- 05 Waiting room --------------------------------------------------------
 
+// --- Clip library -----------------------------------------------------------
+//
+// Clips live in IndexedDB, not in the settings object, so they are NOT part of
+// the staged save model: adding or deleting one takes effect immediately and
+// does not make the save bar appear. Blobs are far too big to shuttle through a
+// dirty-check on every keystroke, and "unsaved video" is not a state anyone
+// wants to reason about.
+
+async function renderClips() {
+  const list = $("clip-list");
+  list.innerHTML = "";
+
+  let clips = [];
+  try {
+    clips = await listClips();
+  } catch (err) {
+    showClipNote("Could not open the clip store. " + err.message, true);
+    return;
+  }
+
+  $("clip-empty").hidden = clips.length > 0;
+
+  for (const clip of clips) {
+    const li = el("li", "clip-item");
+    const main = el("div", "clip-item-main");
+    main.appendChild(el("span", "clip-name", clip.name));
+    const dims = clip.width && clip.height ? `${clip.width}×${clip.height}` : "";
+    main.appendChild(
+      el("span", "clip-meta", [formatDuration(clip.durationSec), dims, formatBytes(clip.size)]
+        .filter(Boolean)
+        .join("  ·  "))
+    );
+
+    const remove = el("button", "link-danger", "Remove");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `Remove ${clip.name}`);
+    remove.addEventListener("click", async () => {
+      await deleteClip(clip.id);
+      await renderClips();
+    });
+
+    li.append(main, remove);
+    list.appendChild(li);
+  }
+
+  const estimate = await storageEstimate();
+  const used = clips.reduce((n, c) => n + c.size, 0);
+  $("clip-usage").textContent = estimate && estimate.quota
+    ? `${formatBytes(used)} of about ${formatBytes(estimate.quota)} available`
+    : formatBytes(used);
+}
+
+// One line under the clip list for anything the user needs told. `isError`
+// only changes the colour: a refusal should look different from "shrunk from
+// 12 MB to 3 MB", which is good news.
+function showClipNote(message, isError = false) {
+  const el = $("clip-error");
+  el.textContent = message || "";
+  el.classList.toggle("is-error", Boolean(message) && isError);
+}
+
+function setProgress(fraction, label) {
+  const box = $("clip-progress");
+  box.hidden = fraction === null;
+  if (fraction === null) return;
+  $("clip-progress-fill").style.width = `${Math.round(fraction * 100)}%`;
+  $("clip-progress-label").textContent = label;
+}
+
+async function onClipChosen(file) {
+  showClipNote("");
+  if (!file) return;
+
+  const check = validateClipFile(file);
+  if (!check.ok) {
+    showClipNote(check.reason, true);
+    return;
+  }
+
+  const shrink = $("clip-compress").checked && canCompress();
+  try {
+    // Read the original first. It doubles as a decode check, so a file the
+    // browser cannot open fails now rather than after a minute of re-encoding.
+    setProgress(0, "Reading the file…");
+    const source = await probeVideo(file);
+
+    let blob = file;
+    let usedCompressed = false;
+    let starved = false;
+    let { width, height } = source;
+
+    if (shrink) {
+      setProgress(0, "Re-encoding — this runs in real time, so leave this tab open.");
+      const result = await compressVideo(file, {
+        onProgress: (p) => setProgress(p, `Re-encoding — ${Math.round(p * 100)}%`),
+      });
+      starved = isStarved(result);
+      // A starved encode is a still image held for the length of the clip. It
+      // is smaller than the original, so size alone would wave it through.
+      if (!starved) {
+        // Only worth keeping if it actually came out smaller.
+        const chosen = keepSmaller(file, result.blob);
+        blob = chosen.blob;
+        usedCompressed = chosen.usedCompressed;
+        if (usedCompressed) ({ width, height } = result);
+      }
+    }
+
+    // Duration comes from the original either way: MediaRecorder writes WebM
+    // without a duration in the header, so re-probing the re-encode reports 0.
+    await addClip(blob, {
+      name: file.name,
+      type: blob.type,
+      durationSec: source.durationSec,
+      width,
+      height,
+    });
+    setProgress(null);
+
+    if (starved) {
+      showClipNote(
+        "Kept the original — re-encoding stalled because this tab was not on " +
+          "screen the whole time. Browsers stop handing out video frames to a " +
+          "hidden tab. Try again and leave this tab in view.",
+        true
+      );
+    } else if (shrink && !usedCompressed) {
+      showClipNote(
+        "Kept the original — re-encoding made it larger, which happens with " +
+          "files that are already well compressed."
+      );
+    } else if (usedCompressed) {
+      showClipNote(`Shrunk from ${formatBytes(file.size)} to ${formatBytes(blob.size)}.`);
+    } else if (check.large) {
+      showClipNote(
+        `${formatBytes(file.size)} is on the large side for a short loop. ` +
+          "Ticking “Shrink on upload” would cut it down."
+      );
+    }
+    await renderClips();
+  } catch (err) {
+    setProgress(null);
+    showClipNote(err.message || "Could not add that clip.", true);
+  }
+}
+
 function renderWaitingRoom() {
   $("clips").setAttribute("aria-checked", String(cfg.clips));
   $("clip-hint").textContent = cfg.clips
-    ? "Instead of a quote, a bundled clip plays. No controls, no seeking."
+    ? "Instead of a quote, one of your clips plays. No controls, no seeking."
     : "Quotes only.";
   $("clip-block").hidden = !cfg.clips;
   $("clip-sound").setAttribute("aria-checked", String(cfg.clipSound !== false));
@@ -361,7 +525,6 @@ function renderWaitingRoom() {
       : "Clips start silent. An unmute button is still there if you want it.";
   $("clip-pct").textContent = `${cfg.clipRate}% of waits`;
   $("clip-rate").value = cfg.clipRate;
-  $("clip-slot").textContent = "clips are bundled in src/assets/clips/";
 
   const count = parseQuotes(cfg.quotes).length;
   $("quote-count").textContent = `${count} ${count === 1 ? "line" : "lines"}`;
@@ -441,6 +604,12 @@ $("clip-sound").addEventListener("click", () =>
   patch((c) => { c.clipSound = c.clipSound === false; })
 );
 $("clip-rate").addEventListener("input", (e) => patch((c) => { c.clipRate = num(e.target.value, c.clipRate); }));
+
+$("clip-file").addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ""; // so choosing the same file twice still fires
+  await onClipChosen(file);
+});
 $("quotes").addEventListener("input", (e) => patch((c) => { c.quotes = e.target.value; }));
 
 $("reset-all").addEventListener("click", async () => {
@@ -464,3 +633,18 @@ loadSettings().then((loaded) => {
   saved = JSON.stringify(loaded);
   render();
 });
+
+// Say the ceiling before a file is picked, rather than only in the refusal.
+$("clip-limit").textContent =
+  `MP4 or WebM, up to ${formatBytes(MAX_CLIP_BYTES)} each. They stay on this ` +
+  "computer — nothing is uploaded anywhere.";
+
+// The compress option is only offered where it can actually work, and says
+// what it will do rather than just "compress".
+const compressible = canCompress();
+$("clip-compress").disabled = !compressible;
+$("compress-hint").textContent = compressible
+  ? `Re-encodes to WebM at up to ${TARGET_MAX_EDGE}p. Runs in real time, so a 40-second clip takes 40 seconds. The original is kept if the result is not smaller.`
+  : "This browser cannot re-encode video, so clips are stored as they are.";
+
+renderClips().catch(() => showClipNote("Could not read stored clips.", true));
