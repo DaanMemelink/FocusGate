@@ -178,8 +178,15 @@ gate on `/watch` hand out an unlock that also covered `/shorts`.
 
 Pass length is `preset.unlock` (or the per-rule override), **doubled for video
 hosts** — a clip takes longer than a glance — minus two minutes per cave today,
-and **never below five minutes**, however many times you have caved. Each cave
-also doubles the next wait (30s → 60s → 120s…), capped at five minutes.
+floored at one minute. Each cave also doubles the next wait (30s → 60s →
+120s…), capped at five minutes.
+
+That floor is mechanical, not a policy. Clearing the gate grants the pass and
+then redirects to the site, and the worker inspects that redirect like any other
+navigation — so a pass of zero has already expired by the time the tab arrives,
+gates it again, and traps the user in a loop. One minute is the smallest value
+that survives the round trip. Any length at or above it is honoured exactly as
+entered.
 
 Bailing increments nothing and writes nothing. That is a design rule, not an
 oversight: bailing is rewarded, never punished.
@@ -273,7 +280,9 @@ bundled clips it names exist on disk and that always-on really does gate at
 
 Settled with the user; don't soften these without asking.
 
-- Minimum pass is **5 minutes**, always.
+- Minimum pass is **1 minute** — and only because a pass of zero re-gates the
+  tab on arrival and loops. It was five for a while, which meant the settings
+  page accepted a shorter number and the gate quietly ignored it.
 - Standard 15 min · Light 30 · Maximum 5. Video hosts get double.
 - Passes are keyed by rule. Clearing `/watch` must not unlock `/shorts`.
 - Bailing is never logged and never counted.

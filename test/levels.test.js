@@ -48,6 +48,25 @@ describe("pass length", () => {
     }
     eq(passMinutes(rule("Maximum"), CFG, 99), MIN_PASS_MINUTES);
   });
+
+  // The floor exists so a pass cannot already be over when it is granted:
+  // clearing the gate redirects to the site, the worker inspects that
+  // navigation, and an expired pass would gate the tab again on arrival.
+  it("never grants a pass of zero, which would re-gate on arrival", () => {
+    for (const unlock of [0, -5, null, undefined, NaN]) {
+      ok(
+        passMinutes(rule("Standard", { unlock }), CFG, 99) >= 1,
+        `unlock=${unlock} produced a pass that is already over`
+      );
+    }
+  });
+
+  // What the user asked for: a short pass they chose is honoured, not quietly
+  // rounded up to something the settings page never showed them.
+  it("honours a pass shorter than the old five-minute floor", () => {
+    eq(passMinutes(rule("Standard", { unlock: 2 }), CFG, 0), 2);
+    eq(passMinutes(rule("Standard", { unlock: 1 }), CFG, 0), 1);
+  });
 });
 
 describe("video hosts get double the pass", () => {

@@ -4,7 +4,15 @@
 // `saved` the JSON of what is in storage. When they differ the save bar appears.
 // Nothing reaches chrome.storage.sync until Save is pressed.
 import { getDefaultSettings, cloneSettings, parseQuotes } from "../core/defaults.js";
-import { LEVELS, LEVEL_HINT, presetFor, floorNote, stepsFor, STEP_KEYS } from "../core/levels.js";
+import {
+  LEVELS,
+  LEVEL_HINT,
+  presetFor,
+  floorNote,
+  stepsFor,
+  STEP_KEYS,
+  MIN_PASS_MINUTES,
+} from "../core/levels.js";
 import { parsePattern, groupRules } from "../core/rules.js";
 import { loadSettings, saveSettings } from "../core/storage.js";
 import {
@@ -160,11 +168,14 @@ function rulePanel(rule, i) {
     );
     overrides.appendChild(
       numberField("Pass length", "min", rule.unlock == null ? preset.unlock : rule.unlock, (v) =>
-        patch((c) => { c.rules[i].unlock = num(v, preset.unlock); })
+        patch((c) => {
+          c.rules[i].unlock = Math.max(MIN_PASS_MINUTES, num(v, preset.unlock));
+        })
       )
     );
     panel.appendChild(overrides);
-    panel.appendChild(el("p", "floor-note", floorNote(rule)));
+    const note = floorNote(rule);
+    if (note) panel.appendChild(el("p", "floor-note", note));
   }
 
   const foot = el("div", "panel-foot");
@@ -275,10 +286,16 @@ function renderPresets() {
       )
     );
     row.appendChild(
-      // Floored at the 5-minute minimum here as well as at read time, so the
-      // number on screen can never claim something the gate won't honour.
+      // Clamped here as well as at read time, so the number on screen can never
+      // claim something the gate will not honour. patch() re-renders, so a value
+      // that gets clamped is corrected in front of the user rather than silently.
       presetField(cfg.presets[level].unlock, "m", `${level} pass`, (v) =>
-        patch((c) => { c.presets[level].unlock = Math.max(5, num(v, c.presets[level].unlock)); })
+        patch((c) => {
+          c.presets[level].unlock = Math.max(
+            MIN_PASS_MINUTES,
+            num(v, c.presets[level].unlock)
+          );
+        })
       )
     );
     host.appendChild(row);

@@ -12,10 +12,15 @@ export const LEVEL_HINT = {
   Maximum: "Double wait, every step on, and the shortest pass allowed.",
 };
 
-// A pass is never shorter than this, however many times you have caved today.
-// Settled with the user: below five minutes the gate stops being a pause and
-// starts being a wall, and a wall just gets the extension disabled.
-export const MIN_PASS_MINUTES = 5;
+// The one thing a pass length must not be is zero. Clearing the gate grants the
+// pass and then redirects to the site, and that redirect is itself a navigation
+// the worker inspects — so a pass that has already expired re-gates the tab on
+// arrival, and the user is caught in a loop with no way out. A minute is the
+// smallest value that survives the round trip.
+//
+// This is a mechanical floor, not an opinion about how long is long enough. If
+// you want two-minute passes, set two.
+export const MIN_PASS_MINUTES = 1;
 
 // Each cave shortens the next pass by this much, down to the floor.
 const CAVE_PASS_PENALTY = 2;
@@ -78,11 +83,12 @@ export function passMinutes(rule, cfg, caves = 0) {
   return Math.max(MIN_PASS_MINUTES, Math.round(minutes));
 }
 
-// The note under a rule's per-entry overrides in settings.
+// The note under a rule's per-entry overrides in settings. Only video hosts have
+// anything worth saying; everywhere else the numbers speak for themselves.
 export function floorNote(rule) {
   return isVideoHost(rule.host)
-    ? "Video site — the pass is doubled, and never under 5 minutes."
-    : "A pass is never shorter than 5 minutes.";
+    ? "Video site — the pass is doubled, because a clip takes longer than a glance."
+    : "";
 }
 
 function num(value, fallback) {
