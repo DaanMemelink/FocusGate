@@ -1,6 +1,6 @@
 # Privacy Policy — Focus Gate
 
-_Last updated: 6 September 2026_
+_Last updated: 7 September 2026_
 
 Focus Gate has no servers, no accounts and no analytics. It makes no network
 request of any kind while it runs. Nothing you do in it is sent to me, and there
@@ -36,9 +36,18 @@ browser sync off and it stays local. I never receive it either way.
 
 ## What it does not store
 
-- **Your browsing history.** The extension inspects the URL of a page you are
-  navigating to, in memory, only to decide whether one of your own rules matches
-  it. URLs are never written to storage, never logged, and never transmitted.
+- **A log of the pages you visit.** The extension inspects the URL of a page you
+  are navigating to, in memory, only to decide whether one of your own rules
+  matches it. Full URLs are never written to storage, never logged, and never
+  transmitted.
+
+  What *is* kept is narrower, and listed in the table above: for a rule you set
+  up yourself, an unlock expiry and a count of gates cleared today. That still
+  amounts to a record that you went to a site you chose to gate, which is why
+  the Chrome Web Store listing declares "web history" — Google's definition of
+  that term covers any information about the domains your browser interacts
+  with, whether or not it leaves the device. It is not a browsing log, and it
+  never goes anywhere, but calling it nothing at all would be sleight of hand.
 - **Page content.** Nothing reads the contents of any page you visit.
 - **Anything about sites you have not listed.** A URL that matches no rule is
   discarded immediately.
