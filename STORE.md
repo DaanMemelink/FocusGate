@@ -28,7 +28,13 @@ the extension needs to run: no tests, no tooling, no bundled clips.
 
 > Puts deliberate friction between you and distracting sites. You can always get through - it just has to cost something.
 
-**Category** — Productivity / Workflow & Planning
+**Category** — Workflow & Planning. Well-being also fits, but the comparable
+tools — site blockers, focus timers — sit in Workflow & Planning, which is where
+someone looking for this browses.
+
+**Store icon** — `src/assets/icons/icon-128.png`, the one with the cream ground.
+Not `mark-ink-transparent-128.png`: the store renders the icon on both light and
+dark surfaces, and a transparent dark mark disappears against a dark one.
 
 **Detailed description**
 
@@ -50,6 +56,9 @@ the extension needs to run: no tests, no tooling, no bundled clips.
 > gets the full treatment — and rules can name a path, so youtube.com is Light
 > while youtube.com/shorts is Standard. Getting past one rule never unlocks
 > another.
+>
+> While you wait you get a quote, or a video clip of your own. Add MP4 or WebM
+> files in Settings; they are stored in your browser and never uploaded.
 >
 > Everything is configurable: which steps run, how long the wait is, how long a
 > site stays open afterwards, focus hours, and the quotes you see while waiting.
@@ -127,7 +136,15 @@ At least one, 1280×800 or 640×400. The two worth showing:
 1. **The gate, mid-countdown** — the ring, a quote, and the step rail.
 2. **Settings** — the rule list, with the grouped YouTube rules visible.
 
-To capture them, load the extension unpacked, open each page, and screenshot at
+Three are checked in under `store/`, captured at 1280×800:
+
+| File | Shows |
+| --- | --- |
+| `01-gate-instagram.png` | The gate on instagram.com, mid-countdown, with a quote |
+| `02-settings.png` | The rule list, with the grouped YouTube rules |
+| `03-settings-clips.png` | The waiting room: clip list, size limit, shrink option |
+
+To take more, load the extension unpacked, open each page, and screenshot at
 1280×800. The gate is reachable directly at
 `chrome-extension://<id>/src/gate/gate.html?target=https://example.com` — with a
 rule for `example.com` in place, or the page passes straight through.
